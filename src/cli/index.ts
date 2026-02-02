@@ -8,7 +8,7 @@ import { exportCommand } from "./commands/export.js"
 import { historyCommand } from "./commands/history.js"
 import { importCommand } from "./commands/import.js"
 import { listCommand } from "./commands/list.js"
-import { mainMenuCommand } from "./commands/menu.js"
+import { mainMenuCommand } from "./commands/menu/index.js"
 import {
   profileDeleteCommand,
   profileListCommand,
@@ -218,6 +218,11 @@ program
     const options = program.opts()
     await historyCommand(options)
   })
+
+program.action(async () => {
+  const options = program.opts()
+  await mainMenuCommand(options)
+})
 
 export async function run() {
   await program.parseAsync(process.argv)
