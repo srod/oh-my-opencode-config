@@ -1,0 +1,289 @@
+import path from "node:path"
+import { cancel, confirm, isCancel, outro, select, text } from "@clack/prompts"
+import chalk from "chalk"
+import { loadConfig } from "../../config/loader.js"
+import { resolveConfigPath } from "../../config/resolve.js"
+import { handleError } from "../../errors/handlers.js"
+import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "../../profile/constants.js"
+import {
+  deleteProfile,
+  listProfiles,
+  ProfileError,
+  ProfileNotFoundError,
+  renameProfile,
+  saveProfile,
+  useProfile,
+} from "../../profile/manager.js"
+import { printBlank, printLine } from "../../utils/output.js"
+import type { BaseCommandOptions } from "../types.js"
+
+function getConfigDir(configPath: string): string {
+  return path.dirname(configPath)
+}
+
+function validateProfileNameInput(value: string | undefined): string | Error | undefined {
+  if (!value || value.length === 0) {
+    return "Profile name is required"
+  }
+  if (value.length > PROFILE_NAME_MAX_LENGTH) {
+    return `Profile name must be ${PROFILE_NAME_MAX_LENGTH} characters or less`
+  }
+  if (!PROFILE_NAME_REGEX.test(value)) {
+    return "Profile name must contain only letters, numbers, hyphens, and underscores"
+  }
+  return undefined
+}
+
+export async function profileSaveCommand(
+  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  name?: string,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+    const config = await loadConfig(configPath)
+
+    if (!name) {
+      const inputName = await text({
+        message: "Enter a name for this profile",
+        validate: validateProfileNameInput,
+      })
+
+      if (isCancel(inputName)) {
+        cancel("Operation cancelled.")
+        return
+      }
+
+      name = inputName
+    }
+
+    await saveProfile(configDir, name, config)
+    outro(chalk.green(`Profile "${name}" saved successfully.`))
+  } catch (error) {
+    if (error instanceof ProfileError) {
+      cancel(error.message)
+      return
+    }
+    handleError(error, { verbose: options.verbose })
+  }
+}
+
+export async function profileUseCommand(
+  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  name?: string,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+
+    if (!name) {
+      const profiles = await listProfiles(configDir)
+
+      if (profiles.length === 0) {
+        outro(chalk.yellow("No profiles found. Create one with 'profile save <name>' first."))
+        return
+      }
+
+      const selection = await select({
+        message: "Select a profile to use",
+        options: profiles.map((p) => ({
+          value: p.name,
+          label: p.isActive ? `${p.name} (active)` : p.name,
+          hint: p.isActive ? "currently active" : undefined,
+        })),
+      })
+
+      if (isCancel(selection)) {
+        cancel("Operation cancelled.")
+        return
+      }
+
+      name = selection
+    }
+
+    await useProfile(configDir, name)
+    outro(chalk.green(`Now using profile "${name}".`))
+  } catch (error) {
+    if (error instanceof ProfileNotFoundError) {
+      cancel(error.message)
+      return
+    }
+    handleError(error, { verbose: options.verbose })
+  }
+}
+
+export async function profileListCommand(
+  options: Pick<BaseCommandOptions, "config" | "json">,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+    const profiles = await listProfiles(configDir)
+
+    if (options.json) {
+      printLine(
+        JSON.stringify(
+          profiles.map((p) => ({
+            name: p.name,
+            isActive: p.isActive,
+            created: p.created.toISOString(),
+          })),
+          null,
+          2,
+        ),
+      )
+      return
+    }
+
+    if (profiles.length === 0) {
+      outro(chalk.yellow("No profiles found."))
+      return
+    }
+
+    printBlank()
+    printLine(chalk.bold(`Profiles for: ${chalk.cyan(configDir)}`))
+    printBlank()
+
+    const maxNameLength = Math.max(...profiles.map((p) => p.name.length))
+
+    for (const profile of profiles) {
+      const marker = profile.isActive ? chalk.green("* ") : "  "
+      const namePadded = profile.name.padEnd(maxNameLength + 2)
+      const createdStr = profile.created.toLocaleString()
+      printLine(`${marker}${chalk.cyan(namePadded)} ${chalk.dim(createdStr)}`)
+    }
+
+    printBlank()
+    printLine(chalk.dim("* indicates active profile"))
+  } catch (error) {
+    handleError(error, { verbose: false })
+  }
+}
+
+export async function profileDeleteCommand(
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  name?: string,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+
+    if (!name) {
+      const profiles = await listProfiles(configDir)
+
+      if (profiles.length === 0) {
+        outro(chalk.yellow("No profiles found."))
+        return
+      }
+
+      const deletableProfiles = profiles.filter((p) => !p.isActive)
+
+      if (deletableProfiles.length === 0) {
+        outro(
+          chalk.yellow(
+            "Cannot delete the only profile while it's active. Switch to another profile first.",
+          ),
+        )
+        return
+      }
+
+      const selection = await select({
+        message: "Select a profile to delete",
+        options: deletableProfiles.map((p) => ({
+          value: p.name,
+          label: p.name,
+        })),
+      })
+
+      if (isCancel(selection)) {
+        cancel("Operation cancelled.")
+        return
+      }
+
+      name = selection
+    }
+
+    const confirmed = await confirm({
+      message: `Delete profile "${name}"?`,
+      initialValue: false,
+    })
+
+    if (isCancel(confirmed) || !confirmed) {
+      cancel("Operation cancelled.")
+      return
+    }
+
+    if (options.dryRun) {
+      outro(chalk.yellow(`Dry run: Would delete profile "${name}".`))
+      return
+    }
+
+    await deleteProfile(configDir, name)
+    outro(chalk.green(`Profile "${name}" deleted.`))
+  } catch (error) {
+    if (error instanceof ProfileError) {
+      cancel(error.message)
+      return
+    }
+    handleError(error, { verbose: options.verbose })
+  }
+}
+
+export async function profileRenameCommand(
+  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  oldName?: string,
+  newName?: string,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+
+    if (!oldName) {
+      const profiles = await listProfiles(configDir)
+
+      if (profiles.length === 0) {
+        outro(chalk.yellow("No profiles found."))
+        return
+      }
+
+      const selection = await select({
+        message: "Select a profile to rename",
+        options: profiles.map((p) => ({
+          value: p.name,
+          label: p.name,
+          hint: p.isActive ? "currently active" : undefined,
+        })),
+      })
+
+      if (isCancel(selection)) {
+        cancel("Operation cancelled.")
+        return
+      }
+
+      oldName = selection
+    }
+
+    if (!newName) {
+      const inputName = await text({
+        message: `Enter new name for profile "${oldName}"`,
+        validate: validateProfileNameInput,
+      })
+
+      if (isCancel(inputName)) {
+        cancel("Operation cancelled.")
+        return
+      }
+
+      newName = inputName
+    }
+
+    await renameProfile(configDir, oldName, newName)
+    outro(chalk.green(`Profile "${oldName}" renamed to "${newName}".`))
+  } catch (error) {
+    if (error instanceof ProfileError) {
+      cancel(error.message)
+      return
+    }
+    handleError(error, { verbose: options.verbose })
+  }
+}
