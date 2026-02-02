@@ -182,6 +182,40 @@ The default model assignments in this tool are synchronized with the [oh-my-open
 
 If the defaults in this CLI seem outdated, compare them against these files in the upstream repository.
 
+## Contributing
+
+This project uses a **develop/main branching workflow**:
+
+- **`develop`** — Active development branch (default)
+- **`main`** — Production releases only
+
+### Workflow
+
+```bash
+# 1. Work on develop
+git checkout develop
+git pull origin develop
+
+# 2. Make changes
+# ... your changes ...
+git commit -m "feat: add feature"
+git push origin develop
+
+# 3. When ready to release, create changeset
+bunx changeset
+git add .changeset && git commit -m "chore: add changeset"
+git push origin develop
+
+# 4. Create PR: develop → main
+gh pr create --base main --head develop --title "Release"
+
+# 5. Merge PR → auto-publishes to npm
+```
+
+**CI/CD:**
+- **develop pushes** → Run tests (`.github/workflows/ci.yml`)
+- **main merges** → Run tests + publish to npm (`.github/workflows/release.yml`)
+
 ## Development
 
 ```bash
