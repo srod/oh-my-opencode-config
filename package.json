@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "bun run --hot src/index.ts",
-    "test": "bun test",
+    "test": "NO_COLOR=1 bun test",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
     "format": "biome format src",
