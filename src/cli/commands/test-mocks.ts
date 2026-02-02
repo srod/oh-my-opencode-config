@@ -1,6 +1,7 @@
 import { mock } from "bun:test"
 import realFs from "node:fs/promises"
 import type { ModelsCache } from "../../types/index.js"
+import { AGENT_REQUIREMENTS } from "../../types/requirements.js"
 
 // Capture real fs.stat before mock.module overrides it
 export const realStat = realFs.stat.bind(realFs)
@@ -100,12 +101,17 @@ export const mockIsAgentName = mock((name: string) =>
   ].includes(name),
 )
 
+export const mockGetMissingCapabilities = mock(() => [] as string[])
+export const mockIsModelSuitable = mock(() => true)
+
 mock.module("../../validation/capabilities.js", () => ({
   validateModelForAgent: mockValidateModelForAgent,
   isAgentName: mockIsAgentName,
   isCapability: mock(() => true),
   hasProperty: mock(() => true),
-  AGENT_REQUIREMENTS: {},
+  AGENT_REQUIREMENTS,
+  getMissingCapabilities: mockGetMissingCapabilities,
+  isModelSuitable: mockIsModelSuitable,
 }))
 
 export const mockLoadConfig = mock((_path?: string) =>
