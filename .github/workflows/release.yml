@@ -1,5 +1,6 @@
 name: Release
 
+# Triggers when develop is merged to main
 on:
   push:
     branches:
