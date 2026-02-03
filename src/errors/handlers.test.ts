@@ -17,7 +17,7 @@ mock.module("execa", () => ({
 }))
 
 const mockStat = mock(async () => ({ mtime: new Date() }))
-mock.module("#utils/fs-promises.js", () => ({
+mock.module("#utils/bun-file.js", () => ({
   stat: mockStat,
 }))
 

@@ -1,8 +1,8 @@
 import { confirm, isCancel, log } from "@clack/prompts"
 import chalk from "chalk"
 import { execa } from "execa"
+import { stat } from "#utils/bun-file.js"
 import { isErrnoException } from "#utils/fs.js"
-import { stat } from "#utils/fs-promises.js"
 import { printError } from "#utils/output.js"
 import {
   CacheCorruptedError,
