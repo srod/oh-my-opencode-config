@@ -6,7 +6,7 @@ export type SearchableAction = "BACK_ACTION"
 export type SearchableSelectOption =
   | {
       value: string
-      label?: string
+      label: string
       hint?: string
     }
   | {
@@ -47,12 +47,10 @@ export async function searchableSelect<T>(
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const valueMap = new Map<string, T>()
+    const valueMap = new Map<string | symbol, T>()
     const itemOptions = filteredItems.map((item) => {
       const option = getOption(item)
-      if (typeof option.value === "string") {
-        valueMap.set(option.value, item)
-      }
+      valueMap.set(option.value, item)
       return option
     })
 
@@ -108,14 +106,12 @@ export async function searchableSelect<T>(
       continue
     }
 
-    if (selection === "BACK_ACTION") {
-      return "BACK_ACTION"
-    }
-
-    if (typeof selection === "symbol") return selection
-
     const selectedItem = valueMap.get(selection)
     if (!selectedItem) {
+      if (selection === "BACK_ACTION") {
+        return "BACK_ACTION"
+      }
+      if (typeof selection === "symbol") return selection
       return SELECTION_NOT_FOUND
     }
     return selectedItem

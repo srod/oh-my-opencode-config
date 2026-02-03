@@ -530,7 +530,7 @@ export async function buildDoctorReport(
   const opencodeVersion = await getOpencodeVersion()
   const ohMyOpencodeVersion = await getOhMyOpencodeVersion(options.opencodeConfig)
 
-  const cacheStatus = await checkModelCache()
+  let cacheStatus = await checkModelCache()
 
   if (options.fix && (!cacheStatus.exists || cacheStatus.outdated)) {
     const s = spinner()
@@ -538,6 +538,7 @@ export async function buildDoctorReport(
     const refreshed = await refreshCache()
     if (refreshed) {
       s.stop("Model cache refreshed")
+      cacheStatus = await checkModelCache()
     } else {
       s.stop("Failed to refresh model cache")
     }

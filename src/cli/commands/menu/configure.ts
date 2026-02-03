@@ -116,6 +116,10 @@ export async function menuConfigureAgents(
           step = "PROVIDER"
           continue
         }
+        if (typeof modelResult === "symbol") {
+          printLine(chalk.red("No selection found."))
+          continue
+        }
         selectedModel = modelResult
         step = "VARIANT"
       } else if (step === "VARIANT") {
@@ -285,6 +289,10 @@ export async function menuConfigureCategories(
         }
         if (modelResult === "BACK_ACTION") {
           step = "PROVIDER"
+          continue
+        }
+        if (typeof modelResult === "symbol") {
+          printLine(chalk.red("No selection found."))
           continue
         }
         selectedModel = modelResult

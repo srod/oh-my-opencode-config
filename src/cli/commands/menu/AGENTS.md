@@ -4,7 +4,7 @@ Orchestrator for TUI-based configuration via `@clack/prompts`.
 
 ## Structure
 
-```
+```text
 menu/
 ├── index.ts      # Main loop + action dispatch (21 actions)
 ├── configure.ts  # Multi-step wizard (PROVIDER→MODEL→VARIANT)
@@ -36,7 +36,7 @@ while (true) {
 ### Diff-Driven Workflow
 
 All mutations follow:
-```
+```text
 generateDiff(old, new) → formatDiff() → confirm() → createBackup() → saveConfig()
 ```
 
