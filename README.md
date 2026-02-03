@@ -15,9 +15,13 @@ Easily configure which models and variants are used by different agents and cate
 
 ## Installation
 
-Requires [Bun](https://bun.sh/).
+This CLI requires [Bun](https://bun.sh/) as its runtime.
 
 ```bash
+# Install Bun first (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
+# Then install the CLI
 npm install -g oh-my-opencode-config
 ```
 
@@ -64,6 +68,21 @@ Lists all available configuration backups with their timestamps.
 ### `backup restore <timestamp>`
 Restores the configuration from a specific backup.
 
+### `profile save [name]`
+Save current configuration as a named profile. If no name is provided, prompts interactively.
+
+### `profile use [name]`
+Switch to a previously saved profile. If no name is provided, shows an interactive selection.
+
+### `profile list`
+List all available saved profiles.
+
+### `profile delete [name]`
+Delete a saved profile. If no name is provided, prompts interactively.
+
+### `profile rename [old] [new]`
+Rename an existing profile.
+
 ### `diff`
 Shows the difference between your current configuration and the default settings with color coding and summary statistics.
 
@@ -72,6 +91,27 @@ Manually refresh the available models cache from `opencode models`.
 
 ### `clear-cache`
 Clear the available models cache to force a fresh fetch on next run.
+
+### `doctor`
+Diagnose configuration issues and validate setup. Checks for:
+- Missing or corrupted cache
+- Invalid model assignments
+- Capability mismatches
+- Defunct agent configurations
+
+Use `--fix` to automatically resolve cache issues when possible.
+
+### `import [path]`
+Import configuration from a JSON file. If no path is provided, prompts for file selection.
+
+### `export [path]`
+Export current configuration to a JSON file. If no path is provided, prompts for destination.
+
+### `undo`
+Undo the last configuration change by restoring the most recent backup.
+
+### `history`
+Show configuration change history from backups. Use `--limit <number>` to restrict the number of entries shown.
 
 ## Global Flags
 
@@ -176,11 +216,44 @@ If another process modifies the configuration while you are using the CLI, it wi
 
 The default model assignments in this tool are synchronized with the [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) repository.
 
-**Primary Sources:**
-- **Agents**: [`src/shared/model-requirements.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts) (Defines fallback chains for agents like `sisyphus`, `oracle`)
-- **Categories**: [`src/tools/delegate-task/constants.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/tools/delegate-task/constants.ts) (Defines defaults for categories like `visual-engineering`, `ultrabrain`)
+**Source of Truth:**
+- [`src/shared/model-requirements.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts) — Defines fallback chains for both agents (`sisyphus`, `oracle`, etc.) and categories (`visual-engineering`, `ultrabrain`, etc.)
 
-If the defaults in this CLI seem outdated, compare them against these files in the upstream repository.
+If the defaults in this CLI seem outdated, compare them against this file in the upstream repository.
+
+## Contributing
+
+This project uses a **develop/main branching workflow**:
+
+- **`develop`** — Active development branch (default)
+- **`main`** — Production releases only
+
+### Workflow
+
+```bash
+# 1. Work on develop
+git checkout develop
+git pull origin develop
+
+# 2. Make changes
+# ... your changes ...
+git commit -m "feat: add feature"
+git push origin develop
+
+# 3. When ready to release, create changeset
+bunx changeset
+git add .changeset && git commit -m "chore: add changeset"
+git push origin develop
+
+# 4. Create PR: develop → main
+gh pr create --base main --head develop --title "Release"
+
+# 5. Merge PR → auto-publishes to npm
+```
+
+**CI/CD:**
+- **develop pushes** → Run tests (`.github/workflows/ci.yml`)
+- **main merges** → Run tests + publish to npm (`.github/workflows/release.yml`)
 
 ## Development
 

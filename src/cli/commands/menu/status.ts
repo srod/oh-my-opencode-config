@@ -1,12 +1,13 @@
 import chalk from "chalk"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { loadCustomModels, loadModelsCache, mergeModelsCache } from "../../../models/parser.js"
-import { colorizeAgent } from "../../../types/colors.js"
-import { AGENT_REQUIREMENTS } from "../../../types/requirements.js"
-import { printBlank, printLine, printSeparator } from "../../../utils/output.js"
-import { isAgentName, validateModelForAgent } from "../../../validation/capabilities.js"
-import type { BaseCommandOptions } from "../../types.js"
+import { buildDoctorReport, printTextReport } from "#cli/commands/doctor.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { loadCustomModels, loadModelsCache, mergeModelsCache } from "#models/parser.js"
+import { colorizeAgent } from "#types/colors.js"
+import { AGENT_REQUIREMENTS } from "#types/requirements.js"
+import { printLine, printSeparator } from "#utils/output.js"
+import { isAgentName, validateModelForAgent } from "#validation/capabilities.js"
 
 export async function menuStatus(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig">,
@@ -104,68 +105,6 @@ export async function menuStatus(
 export async function menuDoctor(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig">,
 ): Promise<void> {
-  const configPath = resolveConfigPath(options.config)
-  const config = await loadConfig(configPath)
-  const modelsCache = await loadModelsCache()
-  const customModelsCache = await loadCustomModels(options.opencodeConfig)
-  const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
-
-  printBlank()
-  printLine(chalk.bold("🔍 Diagnosing configuration..."))
-  printBlank()
-
-  const cacheFile = Bun.file(`${process.env.HOME}/.cache/opencode/models.json`)
-  const cacheExists = await cacheFile.exists()
-
-  if (cacheExists) {
-    printLine(`${chalk.green("✓")} Model cache: Found`)
-  } else {
-    printLine(`${chalk.red("✗")} Model cache: Missing`)
-    printLine(`  ${chalk.gray("→ Suggestion: Run 'oh-my-opencode-config refresh'")}`)
-  }
-
-  printLine(`${chalk.green("✓")} Config file: Valid`)
-  printLine(chalk.dim(`  (${configPath})`))
-
-  for (const agentName of Object.keys(AGENT_REQUIREMENTS)) {
-    const agentConfig = config.agents?.[agentName]
-
-    if (!agentConfig || !agentConfig.model) {
-      printLine(
-        `${chalk.yellow("⚠")} Agent "${colorizeAgent(agentName)}": ${chalk.yellow("Not configured")}`,
-      )
-      continue
-    }
-
-    const parts = agentConfig.model.split("/")
-    const provider = parts[0]
-    const modelId = parts[1]
-
-    if (!provider || !modelId) {
-      printLine(`${chalk.red("✗")} Agent "${colorizeAgent(agentName)}": Invalid model format`)
-      continue
-    }
-
-    const model = mergedCache[provider]?.models[modelId]
-
-    if (!model) {
-      printLine(
-        `${chalk.red("✗")} Agent "${colorizeAgent(agentName)}": Model "${agentConfig.model}" not found`,
-      )
-      continue
-    }
-
-    const validation = validateModelForAgent(model, agentName)
-
-    if (!validation.valid) {
-      printLine(
-        `${chalk.red("✗")} Agent "${colorizeAgent(agentName)}": Missing ${validation.missing.join(", ")}`,
-      )
-    } else {
-      printLine(`${chalk.green("✓")} Agent "${colorizeAgent(agentName)}": Properly configured`)
-    }
-  }
-
-  printSeparator()
-  printLine(chalk.green("Diagnosis complete."))
+  const report = await buildDoctorReport(options)
+  printTextReport(report, { showIntroOutro: false })
 }

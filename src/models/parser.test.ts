@@ -2,14 +2,14 @@ import { describe, expect, mock, spyOn, test } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { CacheCorruptedError, CacheMissingError } from "../errors/types.js"
-import type { ModelsCache } from "../types/models.js"
-import { Capability } from "../types/requirements.js"
+import { CacheCorruptedError, CacheMissingError } from "#errors/types.js"
+import type { ModelsCache } from "#types/models.js"
+import { Capability } from "#types/requirements.js"
 import { findModel, getAvailableModels, loadModelsCache } from "./parser.js"
 
 const FAKE_CACHE_PATH = path.join(os.tmpdir(), `models-${Math.random().toString(36).slice(2)}.json`)
 
-mock.module("../config/paths.js", () => ({
+mock.module("#config/paths.js", () => ({
   MODELS_CACHE_PATH: FAKE_CACHE_PATH,
 }))
 

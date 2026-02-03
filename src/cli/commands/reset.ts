@@ -1,11 +1,11 @@
 import { cancel, confirm, isCancel, outro } from "@clack/prompts"
 import chalk from "chalk"
-import { cleanupOldBackups, createBackup } from "../../backup/manager.js"
-import { promptAndCreateBackup } from "../../backup/prompt.js"
-import { DEFAULT_CONFIG } from "../../config/defaults.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { saveConfig } from "../../config/writer.js"
-import type { BaseCommandOptions } from "../types.js"
+import { cleanupOldBackups, createBackup } from "#backup/manager.js"
+import { promptAndCreateBackup } from "#backup/prompt.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { saveConfig } from "#config/writer.js"
 
 export async function resetCommand(options: Pick<BaseCommandOptions, "config" | "dryRun">) {
   const configPath = resolveConfigPath(options.config)

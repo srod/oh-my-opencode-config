@@ -30,7 +30,7 @@ Options use `Pick<BaseCommandOptions, ...>` — never the full interface.
 | Command options | `Pick<BaseCommandOptions, ...>` from `../types.js` |
 | Error handling | Wrap in try/catch, use `handleError(error, options.verbose)` |
 | User prompts | `@clack/prompts`: `select`, `input`, `confirm`, `isCancel` |
-| Config path | `resolveConfigPath(options.config)` from `../../config/resolve.js` |
+| Config path | `resolveConfigPath(options.config)` from `#config/resolve.js` |
 
 ## Shared Helpers in `configure.ts`
 
@@ -52,8 +52,8 @@ Options use `Pick<BaseCommandOptions, ...>` — never the full interface.
 ## Standard Command Template
 
 ```typescript
-import { resolveConfigPath } from "../../config/resolve.js"
-import type { BaseCommandOptions } from "../types.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function myCommand(
   options: Pick<BaseCommandOptions, "config" | "verbose">,

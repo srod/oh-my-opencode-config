@@ -1,9 +1,9 @@
 import { confirm, intro, isCancel, outro } from "@clack/prompts"
 import chalk from "chalk"
-import { listBackups, restoreBackup } from "../../backup/manager.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { printBlank, printLine } from "../../utils/output.js"
-import type { BaseCommandOptions } from "../types.js"
+import { listBackups, restoreBackup } from "#backup/manager.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { printBlank, printLine } from "#utils/output.js"
 
 export async function undoCommand(
   options: Pick<BaseCommandOptions, "config" | "dryRun">,

@@ -1,66 +1,74 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test"
-import fs from "node:fs"
+import { describe, expect, test } from "bun:test"
 import path from "node:path"
-import { execaSync } from "execa"
-import { asMock } from "../test-utils/mocks.js"
 import { discoverConfigPath } from "./discover.js"
-import { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } from "./paths.js"
 
-mock.module("fs", () => ({
-  default: {
-    existsSync: mock(() => false),
-  },
-}))
-
-mock.module("execa", () => ({
-  execaSync: mock(() => ({ stdout: "" })),
-}))
+const PROJECT_CONFIG_REL_PATH = path.join(".opencode", "oh-my-opencode.json")
+const USER_CONFIG_FULL_PATH = "/home/test-user/.config/opencode/oh-my-opencode.json"
 
 describe("discoverConfigPath", () => {
-  beforeEach(() => {
-    asMock(fs.existsSync).mockClear()
-    asMock(execaSync).mockClear()
-    asMock(fs.existsSync).mockImplementation(() => false)
-    asMock(execaSync).mockImplementation(() => ({ stdout: "" }))
-  })
-
   test("should find project config in CWD", () => {
     const cwdConfigPath = path.join(process.cwd(), PROJECT_CONFIG_REL_PATH)
-    asMock(fs.existsSync).mockImplementation((p) => p === cwdConfigPath)
+    const existsSyncMock = (p: string) => p === cwdConfigPath
+    const execaSyncMock = (_file: string | URL, _args?: readonly string[]) => ({
+      stdout: "",
+    })
 
-    const result = discoverConfigPath()
+    const result = discoverConfigPath({
+      existsSync: existsSyncMock,
+      execaSync: execaSyncMock,
+      projectConfigRelPath: PROJECT_CONFIG_REL_PATH,
+      userConfigFullPath: USER_CONFIG_FULL_PATH,
+    })
     expect(result).toBe(cwdConfigPath)
   })
 
   test("should find project config in git root if not in CWD", () => {
     const gitRoot = "/fake/git/root"
     const gitConfigPath = path.join(gitRoot, PROJECT_CONFIG_REL_PATH)
+    const existsSyncMock = (p: string) => p === gitConfigPath
+    const execaCalls: Array<{ file: string | URL; args?: readonly string[] }> = []
+    const execaSyncMock = (file: string | URL, args?: readonly string[]) => {
+      execaCalls.push({ file, args })
+      return { stdout: gitRoot }
+    }
 
-    asMock(fs.existsSync).mockImplementation((p) => p === gitConfigPath)
-    asMock(execaSync).mockImplementation(() => ({ stdout: gitRoot }))
-
-    const result = discoverConfigPath()
+    const result = discoverConfigPath({
+      existsSync: existsSyncMock,
+      execaSync: execaSyncMock,
+      projectConfigRelPath: PROJECT_CONFIG_REL_PATH,
+      userConfigFullPath: USER_CONFIG_FULL_PATH,
+    })
     expect(result).toBe(gitConfigPath)
-    expect(execaSync).toHaveBeenCalledWith("git", ["rev-parse", "--show-toplevel"])
+    expect(execaCalls[0]).toEqual({ file: "git", args: ["rev-parse", "--show-toplevel"] })
   })
 
   test("should fall back to user config if no project config", () => {
-    asMock(fs.existsSync).mockImplementation((p) => p === USER_CONFIG_FULL_PATH)
-    asMock(execaSync).mockImplementation(() => {
+    const existsSyncMock = (p: string) => p === USER_CONFIG_FULL_PATH
+    const execaSyncMock = () => {
       throw new Error("not a git repo")
-    })
+    }
 
-    const result = discoverConfigPath()
+    const result = discoverConfigPath({
+      existsSync: existsSyncMock,
+      execaSync: execaSyncMock,
+      projectConfigRelPath: PROJECT_CONFIG_REL_PATH,
+      userConfigFullPath: USER_CONFIG_FULL_PATH,
+    })
     expect(result).toBe(USER_CONFIG_FULL_PATH)
   })
 
   test("should return null if no config found", () => {
-    asMock(fs.existsSync).mockImplementation(() => false)
-    asMock(execaSync).mockImplementation(() => {
+    const existsSyncMock = (_p: string) => false
+    const execaSyncMock = () => {
       throw new Error("not a git repo")
-    })
+    }
 
-    const result = discoverConfigPath()
+    const result = discoverConfigPath({
+      existsSync: existsSyncMock,
+      execaSync: execaSyncMock,
+      projectConfigRelPath: PROJECT_CONFIG_REL_PATH,
+      userConfigFullPath: USER_CONFIG_FULL_PATH,
+    })
     expect(result).toBeNull()
   })
 })

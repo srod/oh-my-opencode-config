@@ -1,8 +1,8 @@
 import { intro, outro, spinner } from "@clack/prompts"
 import chalk from "chalk"
-import { AVAILABLE_MODELS_CACHE_PATH } from "../../config/paths.js"
-import { clearAvailableModelsCache } from "../../models/parser.js"
-import { printLine } from "../../utils/output.js"
+import { AVAILABLE_MODELS_CACHE_PATH } from "#config/paths.js"
+import { clearAvailableModelsCache } from "#models/parser.js"
+import { printLine } from "#utils/output.js"
 
 export async function clearCacheCommand() {
   intro(chalk.bold("Clear Cache"))

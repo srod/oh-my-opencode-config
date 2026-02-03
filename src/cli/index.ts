@@ -1,26 +1,26 @@
 import { Command } from "commander"
-import { backupListCommand, backupRestoreCommand } from "./commands/backup.js"
-import { clearCacheCommand } from "./commands/clear-cache.js"
-import { configureAgentsCommand, configureCategoriesCommand } from "./commands/configure.js"
-import { diffCommand } from "./commands/diff.js"
-import { doctorCommand } from "./commands/doctor.js"
-import { exportCommand } from "./commands/export.js"
-import { historyCommand } from "./commands/history.js"
-import { importCommand } from "./commands/import.js"
-import { listCommand } from "./commands/list.js"
-import { mainMenuCommand } from "./commands/menu/index.js"
+import { backupListCommand, backupRestoreCommand } from "#cli/commands/backup.js"
+import { clearCacheCommand } from "#cli/commands/clear-cache.js"
+import { configureAgentsCommand, configureCategoriesCommand } from "#cli/commands/configure.js"
+import { diffCommand } from "#cli/commands/diff.js"
+import { doctorCommand } from "#cli/commands/doctor.js"
+import { exportCommand } from "#cli/commands/export.js"
+import { historyCommand } from "#cli/commands/history.js"
+import { importCommand } from "#cli/commands/import.js"
+import { listCommand } from "#cli/commands/list.js"
+import { mainMenuCommand } from "#cli/commands/menu/index.js"
 import {
   profileDeleteCommand,
   profileListCommand,
   profileRenameCommand,
   profileSaveCommand,
   profileUseCommand,
-} from "./commands/profile.js"
-import { quickSetupCommand } from "./commands/quick-setup.js"
-import { refreshCommand } from "./commands/refresh.js"
-import { resetCommand } from "./commands/reset.js"
-import { statusCommand } from "./commands/status.js"
-import { undoCommand } from "./commands/undo.js"
+} from "#cli/commands/profile.js"
+import { quickSetupCommand } from "#cli/commands/quick-setup.js"
+import { refreshCommand } from "#cli/commands/refresh.js"
+import { resetCommand } from "#cli/commands/reset.js"
+import { statusCommand } from "#cli/commands/status.js"
+import { undoCommand } from "#cli/commands/undo.js"
 
 export const program = new Command()
 

@@ -1,10 +1,11 @@
 import path from "node:path"
 import { cancel, confirm, isCancel, outro, select, text } from "@clack/prompts"
 import chalk from "chalk"
-import { loadConfig } from "../../config/loader.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { handleError } from "../../errors/handlers.js"
-import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "../../profile/constants.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { handleError } from "#errors/handlers.js"
+import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "#profile/constants.js"
 import {
   deleteProfile,
   listProfiles,
@@ -13,9 +14,8 @@ import {
   renameProfile,
   saveProfile,
   useProfile,
-} from "../../profile/manager.js"
-import { printBlank, printLine } from "../../utils/output.js"
-import type { BaseCommandOptions } from "../types.js"
+} from "#profile/manager.js"
+import { printBlank, printLine } from "#utils/output.js"
 
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises"
-import { ConcurrentModificationError } from "../errors/types.js"
-import type { Config } from "../types/config.js"
-import { atomicWrite, handleFileError } from "../utils/fs.js"
+import { ConcurrentModificationError } from "#errors/types.js"
+import type { Config } from "#types/config.js"
+import { atomicWrite, handleFileError } from "#utils/fs.js"
 
 export interface SaveConfigOptions {
   filePath: string

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
-import type { Config, ModelsCache } from "../../types/index.js"
+import type { Config, ModelsCache } from "#types/index.js"
 import {
   mockDiscoverConfigPath,
   mockIntro,
@@ -41,10 +41,24 @@ interface Issue {
   autoFixable?: boolean
 }
 
+interface ModelAssignment {
+  name: string
+  model: string
+  variant?: string
+}
+
 interface DiagnosticReport {
   healthy: boolean
   issues: Issue[]
   stats: { errors: number; warnings: number; info: number }
+  versions: { opencode: string | null; ohMyOpencode: string | null }
+  summary: {
+    agentsConfigured: number
+    agentsTotal: number
+    categoriesConfigured: number
+    overrides: number
+  }
+  assignments: { agents: ModelAssignment[]; categories: ModelAssignment[] }
   cache: { exists: boolean; age: number | null; outdated: boolean }
   config: { path: string; valid: boolean }
   agents: { total: number; configured: number; withIssues: number }
@@ -146,6 +160,9 @@ describe("doctorCommand", () => {
       )
       expect(nonCacheErrors).toHaveLength(0)
       expect(report.config.valid).toBe(true)
+      expect(report.summary.agentsConfigured).toBe(Object.keys(agents).length)
+      expect(report.summary.categoriesConfigured).toBe(0)
+      expect(report.summary.overrides).toBe(Object.keys(agents).length)
     })
   })
 
@@ -265,9 +282,19 @@ describe("doctorCommand", () => {
       expect(report).toHaveProperty("healthy")
       expect(report).toHaveProperty("issues")
       expect(report).toHaveProperty("stats")
+      expect(report).toHaveProperty("versions")
+      expect(report).toHaveProperty("summary")
+      expect(report).toHaveProperty("assignments")
       expect(report).toHaveProperty("cache")
       expect(report).toHaveProperty("config")
       expect(report).toHaveProperty("agents")
+    })
+
+    test("includes oh-my-opencode version field", async () => {
+      await runDoctor({ json: true })
+
+      const report = getJsonReport()
+      expect(report.versions.ohMyOpencode).not.toBeUndefined()
     })
 
     test("text mode calls intro/outro", async () => {
@@ -398,7 +425,7 @@ describe("doctorCommand", () => {
 
   describe("models cache loading", () => {
     test("continues when loadModelsCache throws", async () => {
-      mockLoadModelsCache.mockImplementation(() => Promise.reject(new Error("cache missing")))
+      mockLoadModelsCache.mockImplementationOnce(() => Promise.reject(new Error("cache missing")))
 
       await runDoctor({ json: true })
 

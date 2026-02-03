@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { InvalidConfigError } from "../errors/types.js"
-import type { Config } from "../types/config.js"
+import { InvalidConfigError } from "#errors/types.js"
+import type { Config } from "#types/config.js"
 import {
   DanglingSymlinkError,
   deleteProfile,

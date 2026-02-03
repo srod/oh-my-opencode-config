@@ -1,9 +1,9 @@
 import chalk from "chalk"
-import { loadConfig } from "../../config/loader.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { colorizeAgent } from "../../types/colors.js"
-import { printBlank, printLine, printTable } from "../../utils/output.js"
-import type { BaseCommandOptions } from "../types.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { colorizeAgent } from "#types/colors.js"
+import { printBlank, printLine, printTable } from "#utils/output.js"
 
 export async function listCommand(options: Pick<BaseCommandOptions, "json" | "config">) {
   const configPath = resolveConfigPath(options.config)

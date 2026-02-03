@@ -1,18 +1,28 @@
+import { createRequire } from "node:module"
+import os from "node:os"
+import path from "node:path"
 import { intro, outro, spinner } from "@clack/prompts"
 import { $ } from "bun"
 import chalk from "chalk"
-import { loadConfig } from "../../config/loader.js"
-import { MODELS_CACHE_PATH } from "../../config/paths.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { loadCustomModels, loadModelsCache, mergeModelsCache } from "../../models/parser.js"
-import { colorizeAgent } from "../../types/colors.js"
-import type { Config, Model, ModelsCache } from "../../types/index.js"
-import { AGENT_REQUIREMENTS, DYNAMIC_AGENTS } from "../../types/requirements.js"
-import { printBlank, printLine, printSeparator } from "../../utils/output.js"
-import { validateModelForAgent } from "../../validation/capabilities.js"
-import type { BaseCommandOptions } from "../types.js"
+import { z } from "zod"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { loadConfig } from "#config/loader.js"
+import { MODELS_CACHE_PATH, OPENCODE_CONFIG_PATH } from "#config/paths.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { loadCustomModels, loadModelsCache, mergeModelsCache } from "#models/parser.js"
+import { colorizeAgent } from "#types/colors.js"
+import type { Config, Model, ModelsCache } from "#types/index.js"
+import { AGENT_REQUIREMENTS, DYNAMIC_AGENTS } from "#types/requirements.js"
+import { printBlank, printLine, printSeparator } from "#utils/output.js"
+import { validateModelForAgent } from "#validation/capabilities.js"
 
 type IssueSeverity = "error" | "warning" | "info"
+
+const PackageJsonSchema = z.object({
+  version: z.string(),
+})
+
+const nodeRequire = createRequire(import.meta.url)
 
 interface Issue {
   severity: IssueSeverity
@@ -22,6 +32,12 @@ interface Issue {
   autoFixable?: boolean
 }
 
+interface ModelAssignment {
+  name: string
+  model: string
+  variant?: string
+}
+
 interface DiagnosticReport {
   healthy: boolean
   issues: Issue[]
@@ -29,6 +45,20 @@ interface DiagnosticReport {
     errors: number
     warnings: number
     info: number
+  }
+  versions: {
+    opencode: string | null
+    ohMyOpencode: string | null
+  }
+  summary: {
+    agentsConfigured: number
+    agentsTotal: number
+    categoriesConfigured: number
+    overrides: number
+  }
+  assignments: {
+    agents: ModelAssignment[]
+    categories: ModelAssignment[]
   }
   cache: {
     exists: boolean
@@ -58,6 +88,118 @@ function formatDuration(ms: number): string {
   if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`
   if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`
   return "just now"
+}
+
+function splitModelReference(value: unknown): { provider: string; modelId: string } | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null
+  }
+  const slashIndex = value.indexOf("/")
+  if (slashIndex <= 0 || slashIndex === value.length - 1) {
+    return null
+  }
+  return { provider: value.slice(0, slashIndex), modelId: value.slice(slashIndex + 1) }
+}
+
+function collectAssignments(
+  entries: Record<string, { model?: string; variant?: string }> | undefined,
+): ModelAssignment[] {
+  if (!entries) {
+    return []
+  }
+
+  const assignments: ModelAssignment[] = []
+
+  for (const [name, value] of Object.entries(entries)) {
+    if (typeof value.model !== "string" || value.model.length === 0) {
+      continue
+    }
+    assignments.push({
+      name,
+      model: value.model,
+      variant: typeof value.variant === "string" ? value.variant : undefined,
+    })
+  }
+
+  return assignments.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function formatPathForDisplay(filePath: string): string {
+  const homeDir = os.homedir()
+  if (filePath.startsWith(homeDir)) {
+    return `~${filePath.slice(homeDir.length)}`
+  }
+  return filePath
+}
+
+function isWithinDir(targetDir: string, allowedDir: string): boolean {
+  const relative = path.relative(allowedDir, targetDir)
+  if (relative === "") {
+    return true
+  }
+  return !relative.startsWith("..") && !path.isAbsolute(relative)
+}
+
+async function readPackageVersion(packagePath: string): Promise<string | null> {
+  const file = Bun.file(packagePath)
+  if (!(await file.exists())) {
+    return null
+  }
+
+  try {
+    const content = await file.text()
+    const parsed = PackageJsonSchema.safeParse(JSON.parse(content))
+    if (!parsed.success) {
+      return null
+    }
+    const version = parsed.data.version.trim()
+    return version.length > 0 ? version : null
+  } catch {
+    return null
+  }
+}
+
+async function getOhMyOpencodeVersion(opencodeConfigPath?: string): Promise<string | null> {
+  try {
+    const packageJsonPath = nodeRequire.resolve("oh-my-opencode/package.json")
+    const fromResolve = await readPackageVersion(packageJsonPath)
+    if (fromResolve) {
+      return fromResolve
+    }
+  } catch {
+    // ignore resolution failures
+  }
+
+  const defaultConfigDir = path.dirname(OPENCODE_CONFIG_PATH)
+  const defaultPackagePath = path.join(
+    defaultConfigDir,
+    "node_modules",
+    "oh-my-opencode",
+    "package.json",
+  )
+  const fromDefaultConfig = await readPackageVersion(defaultPackagePath)
+  if (fromDefaultConfig) {
+    return fromDefaultConfig
+  }
+
+  if (opencodeConfigPath) {
+    const resolvedConfigDir = path.dirname(path.resolve(opencodeConfigPath))
+    const allowedDir = path.resolve(defaultConfigDir)
+    if (isWithinDir(resolvedConfigDir, allowedDir) && resolvedConfigDir !== allowedDir) {
+      const overridePackagePath = path.join(
+        resolvedConfigDir,
+        "node_modules",
+        "oh-my-opencode",
+        "package.json",
+      )
+      const fromOverride = await readPackageVersion(overridePackagePath)
+      if (fromOverride) {
+        return fromOverride
+      }
+    }
+  }
+
+  return null
 }
 
 async function checkModelCache(): Promise<{
@@ -90,6 +232,22 @@ async function refreshCache(): Promise<boolean> {
     return result.length > 0
   } catch {
     return false
+  }
+}
+
+async function getOpencodeVersion(): Promise<string | null> {
+  const opencodePath = Bun.which("opencode")
+  if (!opencodePath) {
+    return null
+  }
+
+  try {
+    const output = await $`${opencodePath} --version`.text()
+    const firstLine = output.split(/\r?\n/u)[0] ?? ""
+    const trimmed = firstLine.trim()
+    return trimmed.length > 0 ? trimmed : null
+  } catch {
+    return null
   }
 }
 
@@ -135,8 +293,8 @@ function checkConfigSchema(config: Config): Issue[] {
       continue
     }
 
-    const parts = agentConfig.model.split("/")
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    const modelRef = splitModelReference(agentConfig.model)
+    if (!modelRef) {
       issues.push({
         severity: "error",
         category: "config",
@@ -168,9 +326,11 @@ function checkAgentCapabilities(config: Config, mergedCache: ModelsCache): Issue
       continue
     }
 
-    const parts = agentConfig.model.split("/")
-    const provider = parts[0]
-    const modelId = parts[1]
+    const modelRef = splitModelReference(agentConfig.model)
+    if (!modelRef) {
+      continue
+    }
+    const { provider, modelId } = modelRef
 
     if (!provider || !modelId) {
       continue
@@ -210,6 +370,14 @@ function generateReport(
   configPath: string,
   configValid: boolean,
   issues: Issue[],
+  versions: { opencode: string | null; ohMyOpencode: string | null },
+  summary: {
+    agentsConfigured: number
+    agentsTotal: number
+    categoriesConfigured: number
+    overrides: number
+  },
+  assignments: { agents: ModelAssignment[]; categories: ModelAssignment[] },
 ): DiagnosticReport {
   const errors = issues.filter((i) => i.severity === "error").length
   const warnings = issues.filter((i) => i.severity === "warning").length
@@ -219,6 +387,9 @@ function generateReport(
     healthy: errors === 0 && !cacheStatus.outdated,
     issues,
     stats: { errors, warnings, info },
+    versions,
+    summary,
+    assignments,
     cache: cacheStatus,
     config: { path: configPath, valid: configValid },
     agents: {
@@ -229,8 +400,18 @@ function generateReport(
   }
 }
 
-function printTextReport(report: DiagnosticReport): void {
-  intro(chalk.bold("🔍 Diagnosing configuration..."))
+export function printTextReport(
+  report: DiagnosticReport,
+  options?: { showIntroOutro?: boolean },
+): void {
+  const showIntroOutro = options?.showIntroOutro ?? true
+
+  if (showIntroOutro) {
+    intro(chalk.bold("🔍 Diagnosing configuration..."))
+  } else {
+    printBlank()
+    printLine(chalk.bold("🔍 Diagnosing configuration..."))
+  }
 
   printBlank()
 
@@ -256,7 +437,40 @@ function printTextReport(report: DiagnosticReport): void {
     printLine(`${chalk.red("✗")} Config file: Invalid`)
   }
 
-  printLine(chalk.dim(`  (${report.config.path})`))
+  printLine(chalk.dim(`  (${formatPathForDisplay(report.config.path)})`))
+  const opencodeSymbol = report.versions.opencode ? chalk.green("✓") : chalk.yellow("⚠")
+  printLine(`${opencodeSymbol} opencode: ${report.versions.opencode ?? "not found in PATH"}`)
+  const ohMySymbol = report.versions.ohMyOpencode ? chalk.green("✓") : chalk.yellow("⚠")
+  printLine(`${ohMySymbol} oh-my-opencode: ${report.versions.ohMyOpencode ?? "not found"}`)
+
+  printBlank()
+  printLine(chalk.bold("Configuration summary"))
+  printLine(
+    `${chalk.green("✓")} Agents configured: ${report.summary.agentsConfigured}/${report.summary.agentsTotal}`,
+  )
+  printLine(`${chalk.green("✓")} Categories configured: ${report.summary.categoriesConfigured}`)
+  printLine(`${chalk.green("✓")} Overrides: ${report.summary.overrides}`)
+
+  printBlank()
+  printLine(chalk.bold("Configured models"))
+  if (report.assignments.agents.length === 0) {
+    printLine(chalk.dim("  Agents: none"))
+  } else {
+    printLine(chalk.dim("  Agents:"))
+    for (const assignment of report.assignments.agents) {
+      const variant = assignment.variant ? ` (${assignment.variant})` : ""
+      printLine(`  ● ${colorizeAgent(assignment.name)}: ${assignment.model}${variant}`)
+    }
+  }
+  if (report.assignments.categories.length === 0) {
+    printLine(chalk.dim("  Categories: none"))
+  } else {
+    printLine(chalk.dim("  Categories:"))
+    for (const assignment of report.assignments.categories) {
+      const variant = assignment.variant ? ` (${assignment.variant})` : ""
+      printLine(`  ● ${assignment.name}: ${assignment.model}${variant}`)
+    }
+  }
 
   const agentIssues = report.issues.filter((i) => i.category === "agent")
   const configIssues = report.issues.filter((i) => i.category === "config")
@@ -304,15 +518,19 @@ function printTextReport(report: DiagnosticReport): void {
     printLine(`Issues found: ${parts.join(", ")}`)
   }
 
-  outro("")
+  if (showIntroOutro) {
+    outro("")
+  }
 }
 
-export async function doctorCommand(
-  options: Pick<BaseCommandOptions, "config" | "json" | "opencodeConfig"> & { fix?: boolean },
-): Promise<void> {
+export async function buildDoctorReport(
+  options: Pick<BaseCommandOptions, "config" | "opencodeConfig"> & { fix?: boolean },
+): Promise<DiagnosticReport> {
   const configPath = resolveConfigPath(options.config)
+  const opencodeVersion = await getOpencodeVersion()
+  const ohMyOpencodeVersion = await getOhMyOpencodeVersion(options.opencodeConfig)
 
-  const cacheStatus = await checkModelCache()
+  let cacheStatus = await checkModelCache()
 
   if (options.fix && (!cacheStatus.exists || cacheStatus.outdated)) {
     const s = spinner()
@@ -320,6 +538,7 @@ export async function doctorCommand(
     const refreshed = await refreshCache()
     if (refreshed) {
       s.stop("Model cache refreshed")
+      cacheStatus = await checkModelCache()
     } else {
       s.stop("Failed to refresh model cache")
     }
@@ -382,7 +601,37 @@ export async function doctorCommand(
   issues.push(...checkConfigSchema(config))
   issues.push(...checkAgentCapabilities(config, mergedCache))
 
-  const report = generateReport(cacheStatus, configPath, configValid, issues)
+  const assignments = {
+    agents: collectAssignments(config.agents),
+    categories: collectAssignments(config.categories),
+  }
+  const summary = {
+    agentsConfigured: assignments.agents.length,
+    agentsTotal: Object.keys(AGENT_REQUIREMENTS).length,
+    categoriesConfigured: assignments.categories.length,
+    overrides: assignments.agents.length + assignments.categories.length,
+  }
+
+  const report = generateReport(
+    cacheStatus,
+    configPath,
+    configValid,
+    issues,
+    {
+      opencode: opencodeVersion,
+      ohMyOpencode: ohMyOpencodeVersion,
+    },
+    summary,
+    assignments,
+  )
+
+  return report
+}
+
+export async function doctorCommand(
+  options: Pick<BaseCommandOptions, "config" | "json" | "opencodeConfig"> & { fix?: boolean },
+): Promise<void> {
+  const report = await buildDoctorReport(options)
 
   if (options.json) {
     printLine(JSON.stringify(report, null, 2))

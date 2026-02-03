@@ -1,54 +1,41 @@
 import { mock } from "bun:test"
 import realFs from "node:fs/promises"
-import type { ModelsCache } from "../../types/index.js"
-import { AGENT_REQUIREMENTS } from "../../types/requirements.js"
+import {
+  mockCancel,
+  mockConfirm,
+  mockIntro,
+  mockIsCancel,
+  mockLog,
+  mockOutro,
+  mockSelect,
+  mockSpinner,
+  mockSpinnerInstance,
+  mockText,
+} from "#test-utils/clack-mocks.js"
+import type { ModelsCache } from "#types/index.js"
+import { AGENT_REQUIREMENTS } from "#types/requirements.js"
 
 // Capture real fs.stat before mock.module overrides it
 export const realStat = realFs.stat.bind(realFs)
 
 export const CANCEL_SYMBOL = Symbol.for("clack:cancel")
-
-export const mockIntro = mock(() => {})
-export const mockOutro = mock(() => {})
-export const mockCancel = mock((_msg?: string) => {})
-export const mockConfirm = mock(() => Promise.resolve(false))
-export const mockIsCancel = mock((value: unknown) => value === CANCEL_SYMBOL)
-export const mockText = mock(() => Promise.resolve(""))
-export const mockSelect = mock(() => Promise.resolve(""))
-const mockSpinnerStart = mock(() => {})
-const mockSpinnerStop = mock(() => {})
-export const mockSpinner = mock(() => ({ start: mockSpinnerStart, stop: mockSpinnerStop }))
-export const mockSpinnerInstance = { start: mockSpinnerStart, stop: mockSpinnerStop }
-export const mockLog = {
-  message: mock((_text?: string) => {}),
-  error: mock(() => {}),
-  info: mock(() => {}),
-  warn: mock(() => {}),
-  success: mock(() => {}),
-  step: mock(() => {}),
+export {
+  mockCancel,
+  mockConfirm,
+  mockIntro,
+  mockIsCancel,
+  mockLog,
+  mockOutro,
+  mockSelect,
+  mockSpinner,
+  mockSpinnerInstance,
+  mockText,
 }
-
-mock.module("@clack/prompts", () => ({
-  intro: mockIntro,
-  outro: mockOutro,
-  cancel: mockCancel,
-  confirm: mockConfirm,
-  isCancel: mockIsCancel,
-  log: mockLog,
-  spinner: mockSpinner,
-  text: mockText,
-  select: mockSelect,
-  multiselect: mock(() => Promise.resolve([])),
-  password: mock(() => Promise.resolve("")),
-  group: mock(() => Promise.resolve({})),
-  note: mock(() => {}),
-  selectKey: mock(() => Promise.resolve("")),
-}))
 
 export const mockPrintLine = mock((_text?: string) => {})
 export const mockPrintBlank = mock(() => {})
 
-mock.module("../../utils/output.js", () => ({
+mock.module("#utils/output.js", () => ({
   printLine: mockPrintLine,
   printBlank: mockPrintBlank,
   printTable: mock(() => {}),
@@ -70,7 +57,7 @@ export const mockGetAvailableModels = mock(() =>
 )
 export const mockFindModel = mock(() => undefined)
 
-mock.module("../../models/parser.js", () => ({
+mock.module("#models/parser.js", () => ({
   loadModelsCache: mockLoadModelsCache,
   loadCustomModels: mockLoadCustomModels,
   mergeModelsCache: mockMergeModelsCache,
@@ -104,7 +91,7 @@ export const mockIsAgentName = mock((name: string) =>
 export const mockGetMissingCapabilities = mock(() => [] as string[])
 export const mockIsModelSuitable = mock(() => true)
 
-mock.module("../../validation/capabilities.js", () => ({
+mock.module("#validation/capabilities.js", () => ({
   validateModelForAgent: mockValidateModelForAgent,
   isAgentName: mockIsAgentName,
   isCapability: mock(() => true),
@@ -117,25 +104,26 @@ mock.module("../../validation/capabilities.js", () => ({
 export const mockLoadConfig = mock((_path?: string) =>
   Promise.resolve({ agents: {}, categories: {} } as Record<string, unknown>),
 )
-mock.module("../../config/loader.js", () => ({ loadConfig: mockLoadConfig }))
+mock.module("#config/loader.js", () => ({ loadConfig: mockLoadConfig }))
 
 export const mockSaveConfig = mock((_path?: string, _config?: unknown) => Promise.resolve())
-mock.module("../../config/writer.js", () => ({ saveConfig: mockSaveConfig }))
+mock.module("#config/writer.js", () => ({ saveConfig: mockSaveConfig }))
 
 export const mockDiscoverConfigPath = mock(() => "/fake/config.json" as string | undefined | null)
-mock.module("../../config/discover.js", () => ({ discoverConfigPath: mockDiscoverConfigPath }))
+mock.module("#config/discover.js", () => ({ discoverConfigPath: mockDiscoverConfigPath }))
 
-mock.module("../../config/paths.js", () => ({
+mock.module("#config/paths.js", () => ({
   MODELS_CACHE_PATH: "/fake/models.json",
   USER_CONFIG_FULL_PATH: "/fake/default-config.json",
+  OPENCODE_CONFIG_PATH: "/fake/opencode.json",
 }))
 
 export const mockPromptAndCreateBackup = mock(() => Promise.resolve(true))
-mock.module("../../backup/prompt.js", () => ({ promptAndCreateBackup: mockPromptAndCreateBackup }))
+mock.module("#backup/prompt.js", () => ({ promptAndCreateBackup: mockPromptAndCreateBackup }))
 
 export const mockCreateBackup = mock(() => Promise.resolve())
 export const mockCleanupOldBackups = mock(() => Promise.resolve())
-mock.module("../../backup/manager.js", () => ({
+mock.module("#backup/manager.js", () => ({
   createBackup: mockCreateBackup,
   cleanupOldBackups: mockCleanupOldBackups,
   listBackups: mock(() => Promise.resolve([])),
@@ -145,13 +133,13 @@ mock.module("../../backup/manager.js", () => ({
 export const mockGenerateDiff = mock(
   () => [{ agent: "oracle", from: "old", to: "new" }] as Record<string, unknown>[],
 )
-mock.module("../../diff/generator.js", () => ({ generateDiff: mockGenerateDiff }))
+mock.module("#diff/generator.js", () => ({ generateDiff: mockGenerateDiff }))
 
 export const mockFormatDiff = mock(() => "diff output")
-mock.module("../../diff/formatter.js", () => ({ formatDiff: mockFormatDiff }))
+mock.module("#diff/formatter.js", () => ({ formatDiff: mockFormatDiff }))
 
 export const mockValidateCacheAge = mock(() => Promise.resolve())
-mock.module("../../errors/handlers.js", () => ({
+mock.module("#errors/handlers.js", () => ({
   validateCacheAge: mockValidateCacheAge,
   handleError: mock(() => {}),
 }))
@@ -167,13 +155,13 @@ mock.module("node:fs/promises", () => ({
 
 export const DONE_ACTION = "__DONE__"
 export const mockSelectAgent = mock(() => Promise.resolve(DONE_ACTION as string | symbol))
-mock.module("../../prompts/agents.js", () => ({ selectAgent: mockSelectAgent, DONE_ACTION }))
+mock.module("#prompts/agents.js", () => ({ selectAgent: mockSelectAgent, DONE_ACTION }))
 
 export const mockSelectModel = mock(() => Promise.resolve({ id: "model-1" }))
-mock.module("../../prompts/models.js", () => ({ selectModel: mockSelectModel }))
+mock.module("#prompts/models.js", () => ({ selectModel: mockSelectModel }))
 
 export const mockSelectVariant = mock(() => Promise.resolve("default"))
-mock.module("../../prompts/variants.js", () => ({ selectVariant: mockSelectVariant }))
+mock.module("#prompts/variants.js", () => ({ selectVariant: mockSelectVariant }))
 
 export const mockSelectProvider = mock(() => Promise.resolve("provider"))
-mock.module("../../prompts/provider.js", () => ({ selectProvider: mockSelectProvider }))
+mock.module("#prompts/provider.js", () => ({ selectProvider: mockSelectProvider }))

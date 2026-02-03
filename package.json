@@ -3,6 +3,68 @@
   "version": "0.1.0",
   "description": "Interactive CLI for managing model assignments in oh-my-opencode.json",
   "type": "module",
+  "imports": {
+    "#backup/*": {
+      "types": "./src/backup/*",
+      "source": "./src/backup/*",
+      "default": "./dist/backup/*"
+    },
+    "#cli/*": {
+      "types": "./src/cli/*",
+      "source": "./src/cli/*",
+      "default": "./dist/cli/*"
+    },
+    "#config/*": {
+      "types": "./src/config/*",
+      "source": "./src/config/*",
+      "default": "./dist/config/*"
+    },
+    "#diff/*": {
+      "types": "./src/diff/*",
+      "source": "./src/diff/*",
+      "default": "./dist/diff/*"
+    },
+    "#errors/*": {
+      "types": "./src/errors/*",
+      "source": "./src/errors/*",
+      "default": "./dist/errors/*"
+    },
+    "#models/*": {
+      "types": "./src/models/*",
+      "source": "./src/models/*",
+      "default": "./dist/models/*"
+    },
+    "#profile/*": {
+      "types": "./src/profile/*",
+      "source": "./src/profile/*",
+      "default": "./dist/profile/*"
+    },
+    "#prompts/*": {
+      "types": "./src/prompts/*",
+      "source": "./src/prompts/*",
+      "default": "./dist/prompts/*"
+    },
+    "#test-utils/*": {
+      "types": "./src/test-utils/*",
+      "source": "./src/test-utils/*",
+      "default": "./dist/test-utils/*"
+    },
+    "#types/*": {
+      "types": "./src/types/*",
+      "source": "./src/types/*",
+      "default": "./dist/types/*"
+    },
+    "#utils/*": {
+      "types": "./src/utils/*",
+      "source": "./src/utils/*",
+      "default": "./dist/utils/*"
+    },
+    "#validation/*": {
+      "types": "./src/validation/*",
+      "source": "./src/validation/*",
+      "default": "./dist/validation/*"
+    }
+  },
   "bin": {
     "oh-my-opencode-config": "./dist/index.js"
   },
@@ -34,8 +96,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "bun run --hot src/index.ts",
-    "test": "bun test",
+    "dev": "bun --hot --conditions=source src/index.ts",
+    "test": "bun test --conditions=source",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
     "format": "biome format src",

@@ -1,8 +1,8 @@
 import { select } from "@clack/prompts"
 import chalk from "chalk"
-import { colorizeAgent } from "../types/colors.js"
-import type { Config } from "../types/config.js"
-import { AGENT_REQUIREMENTS } from "../types/requirements.js"
+import { colorizeAgent } from "#types/colors.js"
+import type { Config } from "#types/config.js"
+import { AGENT_REQUIREMENTS } from "#types/requirements.js"
 
 export const DONE_ACTION = "__DONE__"
 

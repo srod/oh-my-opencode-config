@@ -1,6 +1,6 @@
 import { intro, outro, spinner } from "@clack/prompts"
 import chalk from "chalk"
-import { getAvailableModelIds } from "../../models/parser.js"
+import { getAvailableModelIds } from "#models/parser.js"
 
 export async function refreshCommand() {
   intro(chalk.bold("Refresh Model Cache"))

@@ -4,14 +4,14 @@ import {
   createBackup as createBackupFn,
   listBackups as listBackupsFn,
   restoreBackup as restoreBackupFn,
-} from "../../../backup/manager.js"
-import { promptAndCreateBackup } from "../../../backup/prompt.js"
-import { DEFAULT_CONFIG } from "../../../config/defaults.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { saveConfig } from "../../../config/writer.js"
-import { clearAvailableModelsCache, getAvailableModelIds } from "../../../models/parser.js"
-import { printLine } from "../../../utils/output.js"
-import type { BaseCommandOptions } from "../../types.js"
+} from "#backup/manager.js"
+import { promptAndCreateBackup } from "#backup/prompt.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { saveConfig } from "#config/writer.js"
+import { clearAvailableModelsCache, getAvailableModelIds } from "#models/parser.js"
+import { printLine } from "#utils/output.js"
 
 export async function menuRefresh(): Promise<void> {
   const s = spinner()

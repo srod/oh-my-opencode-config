@@ -1,13 +1,13 @@
 import { confirm, isCancel } from "@clack/prompts"
 import chalk from "chalk"
-import { listBackups, restoreBackup } from "../../../backup/manager.js"
-import { DEFAULT_CONFIG } from "../../../config/defaults.js"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { formatDiff, formatDiffJson } from "../../../diff/formatter.js"
-import { generateDiff } from "../../../diff/generator.js"
-import { printBlank, printLine, printSeparator } from "../../../utils/output.js"
-import type { BaseCommandOptions } from "../../types.js"
+import { listBackups, restoreBackup } from "#backup/manager.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { formatDiff, formatDiffJson } from "#diff/formatter.js"
+import { generateDiff } from "#diff/generator.js"
+import { printBlank, printLine, printSeparator } from "#utils/output.js"
 
 export async function menuDiff(
   options: Pick<BaseCommandOptions, "config" | "json">,
@@ -36,9 +36,12 @@ export async function menuDiff(
   printLine(formatDiff(diffEntries))
   printLine("")
   printSeparator()
-  printLine(
-    `Summary: ${chalk.green(`${adds.length} added`)}${adds.length && modifies.length ? ", " : ""}${chalk.yellow(`${modifies.length} modified`)}${(adds.length || modifies.length) && removes.length ? ", " : ""}${chalk.red(`${removes.length} removed`)}`,
-  )
+  const summaryParts = [
+    chalk.green(`${adds.length} added`),
+    chalk.yellow(`${modifies.length} modified`),
+    chalk.red(`${removes.length} removed`),
+  ]
+  printLine(`Summary: ${summaryParts.join(" ")}`)
 }
 
 export async function menuHistory(

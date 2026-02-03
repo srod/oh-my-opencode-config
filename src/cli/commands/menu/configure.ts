@@ -1,28 +1,30 @@
 import { confirm, isCancel, select, spinner } from "@clack/prompts"
 import chalk from "chalk"
-import { createBackup } from "../../../backup/manager.js"
-import { promptAndCreateBackup } from "../../../backup/prompt.js"
-import { DEFAULT_CONFIG } from "../../../config/defaults.js"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { saveConfig } from "../../../config/writer.js"
-import { formatDiff } from "../../../diff/formatter.js"
-import { generateDiff } from "../../../diff/generator.js"
+import { createBackup } from "#backup/manager.js"
+import { promptAndCreateBackup } from "#backup/prompt.js"
+import type { BaseCommandOptions } from "#cli/types.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { saveConfig } from "#config/writer.js"
+import { formatDiff } from "#diff/formatter.js"
+import { generateDiff } from "#diff/generator.js"
 import {
   getAvailableModelIds,
+  getAvailableModels,
+  getAvailableProviders,
   loadCustomModels,
   loadModelsCache,
   mergeModelsCache,
-} from "../../../models/parser.js"
-import { DONE_ACTION, selectAgent } from "../../../prompts/agents.js"
-import { selectModel } from "../../../prompts/models.js"
-import { selectProvider } from "../../../prompts/provider.js"
-import { selectVariant } from "../../../prompts/variants.js"
-import { AGENT_REQUIREMENTS } from "../../../types/requirements.js"
-import { getFileMtime } from "../../../utils/fs.js"
-import { printLine } from "../../../utils/output.js"
-import { isAgentName } from "../../../validation/capabilities.js"
-import type { BaseCommandOptions } from "../../types.js"
+} from "#models/parser.js"
+import { DONE_ACTION, selectAgent } from "#prompts/agents.js"
+import { selectModel } from "#prompts/models.js"
+import { selectProvider } from "#prompts/provider.js"
+import { selectVariant } from "#prompts/variants.js"
+import { AGENT_REQUIREMENTS } from "#types/requirements.js"
+import { getFileMtime } from "#utils/fs.js"
+import { printLine } from "#utils/output.js"
+import { isAgentName } from "#validation/capabilities.js"
 
 export async function menuConfigureAgents(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
@@ -114,7 +116,8 @@ export async function menuConfigureAgents(
           step = "PROVIDER"
           continue
         }
-        if (modelResult === "SEARCH_ACTION" || modelResult === "SHOW_ALL_ACTION") {
+        if (typeof modelResult === "symbol") {
+          printLine(chalk.red("No selection found."))
           continue
         }
         selectedModel = modelResult
@@ -288,7 +291,8 @@ export async function menuConfigureCategories(
           step = "PROVIDER"
           continue
         }
-        if (modelResult === "SEARCH_ACTION" || modelResult === "SHOW_ALL_ACTION") {
+        if (typeof modelResult === "symbol") {
+          printLine(chalk.red("No selection found."))
           continue
         }
         selectedModel = modelResult
@@ -342,23 +346,6 @@ export async function menuConfigureCategories(
   await createBackup(configPath)
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   printLine(chalk.green("Configuration updated! Backup created."))
-}
-
-async function getAvailableProviders(): Promise<string[]> {
-  const modelsCache = await loadModelsCache()
-  return Object.keys(modelsCache)
-}
-
-async function getAvailableModels(
-  modelsCache: Awaited<ReturnType<typeof loadModelsCache>>,
-  provider: string,
-): Promise<{ id: string; name?: string }[]> {
-  const providerData = modelsCache[provider]
-  if (!providerData) return []
-  return Object.entries(providerData.models).map(([id, model]) => ({
-    id,
-    name: typeof model.name === "string" ? model.name : undefined,
-  }))
 }
 
 export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">): Promise<void> {
