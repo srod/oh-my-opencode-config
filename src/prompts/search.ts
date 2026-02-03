@@ -3,11 +3,17 @@ import chalk from "chalk"
 
 export type SearchableAction = "BACK_ACTION"
 
-export interface SearchableSelectOption {
-  value: string
-  label: string
-  hint?: string
-}
+export type SearchableSelectOption =
+  | {
+      value: string
+      label?: string
+      hint?: string
+    }
+  | {
+      value: symbol
+      label: string
+      hint?: string
+    }
 
 export interface SearchableSelectOptions<T> {
   items: T[]
@@ -19,8 +25,9 @@ export interface SearchableSelectOptions<T> {
   canGoBack?: boolean
 }
 
-const SEARCH_ACTION = "__SEARCH__"
-const CLEAR_ACTION = "__CLEAR__"
+const SEARCH_ACTION = Symbol("search")
+const CLEAR_ACTION = Symbol("clear")
+export const SELECTION_NOT_FOUND = Symbol("selection-not-found")
 
 export async function searchableSelect<T>(
   options: SearchableSelectOptions<T>,
@@ -43,7 +50,9 @@ export async function searchableSelect<T>(
     const valueMap = new Map<string, T>()
     const itemOptions = filteredItems.map((item) => {
       const option = getOption(item)
-      valueMap.set(option.value, item)
+      if (typeof option.value === "string") {
+        valueMap.set(option.value, item)
+      }
       return option
     })
 
@@ -69,7 +78,7 @@ export async function searchableSelect<T>(
         ]
       : []
 
-    const selection = await select({
+    const selection = await select<string | symbol>({
       message: message(searchTerm),
       options: [
         searchOption,
@@ -107,7 +116,7 @@ export async function searchableSelect<T>(
 
     const selectedItem = valueMap.get(selection)
     if (!selectedItem) {
-      return Symbol("selection-not-found")
+      return SELECTION_NOT_FOUND
     }
     return selectedItem
   }

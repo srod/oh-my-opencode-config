@@ -81,7 +81,7 @@ async function waitForEnter(): Promise<void> {
       }
     }
     process.stdin.resume()
-    process.stdin.once("data", listener)
+    process.stdin.on("data", listener)
   })
 }
 

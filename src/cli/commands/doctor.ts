@@ -1,3 +1,5 @@
+import { createRequire } from "node:module"
+import os from "node:os"
 import path from "node:path"
 import { intro, outro, spinner } from "@clack/prompts"
 import { $ } from "bun"
@@ -19,6 +21,8 @@ type IssueSeverity = "error" | "warning" | "info"
 const PackageJsonSchema = z.object({
   version: z.string(),
 })
+
+const nodeRequire = createRequire(import.meta.url)
 
 interface Issue {
   severity: IssueSeverity
@@ -86,7 +90,10 @@ function formatDuration(ms: number): string {
   return "just now"
 }
 
-function splitModelReference(value: string): { provider: string; modelId: string } | null {
+function splitModelReference(value: unknown): { provider: string; modelId: string } | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null
+  }
   const slashIndex = value.indexOf("/")
   if (slashIndex <= 0 || slashIndex === value.length - 1) {
     return null
@@ -117,6 +124,22 @@ function collectAssignments(
   return assignments.sort((a, b) => a.name.localeCompare(b.name))
 }
 
+function formatPathForDisplay(filePath: string): string {
+  const homeDir = os.homedir()
+  if (filePath.startsWith(homeDir)) {
+    return `~${filePath.slice(homeDir.length)}`
+  }
+  return filePath
+}
+
+function isWithinDir(targetDir: string, allowedDir: string): boolean {
+  const relative = path.relative(allowedDir, targetDir)
+  if (relative === "") {
+    return true
+  }
+  return !relative.startsWith("..") && !path.isAbsolute(relative)
+}
+
 async function readPackageVersion(packagePath: string): Promise<string | null> {
   const file = Bun.file(packagePath)
   if (!(await file.exists())) {
@@ -137,21 +160,42 @@ async function readPackageVersion(packagePath: string): Promise<string | null> {
 }
 
 async function getOhMyOpencodeVersion(opencodeConfigPath?: string): Promise<string | null> {
-  const configPath = opencodeConfigPath ?? OPENCODE_CONFIG_PATH
-  const configDir = path.dirname(configPath)
-  const configDirPackage = path.join(configDir, "node_modules", "oh-my-opencode", "package.json")
-  const fromConfigDir = await readPackageVersion(configDirPackage)
-  if (fromConfigDir) {
-    return fromConfigDir
+  try {
+    const packageJsonPath = nodeRequire.resolve("oh-my-opencode/package.json")
+    const fromResolve = await readPackageVersion(packageJsonPath)
+    if (fromResolve) {
+      return fromResolve
+    }
+  } catch {
+    // ignore resolution failures
   }
 
-  const binPath = Bun.which("oh-my-opencode")
-  if (binPath) {
-    const binDir = path.dirname(binPath)
-    const binPackage = path.join(binDir, "..", "oh-my-opencode", "package.json")
-    const fromBin = await readPackageVersion(binPackage)
-    if (fromBin) {
-      return fromBin
+  const defaultConfigDir = path.dirname(OPENCODE_CONFIG_PATH)
+  const defaultPackagePath = path.join(
+    defaultConfigDir,
+    "node_modules",
+    "oh-my-opencode",
+    "package.json",
+  )
+  const fromDefaultConfig = await readPackageVersion(defaultPackagePath)
+  if (fromDefaultConfig) {
+    return fromDefaultConfig
+  }
+
+  if (opencodeConfigPath) {
+    const resolvedConfigDir = path.dirname(path.resolve(opencodeConfigPath))
+    const allowedDir = path.resolve(defaultConfigDir)
+    if (isWithinDir(resolvedConfigDir, allowedDir) && resolvedConfigDir !== allowedDir) {
+      const overridePackagePath = path.join(
+        resolvedConfigDir,
+        "node_modules",
+        "oh-my-opencode",
+        "package.json",
+      )
+      const fromOverride = await readPackageVersion(overridePackagePath)
+      if (fromOverride) {
+        return fromOverride
+      }
     }
   }
 
@@ -198,7 +242,7 @@ async function getOpencodeVersion(): Promise<string | null> {
   }
 
   try {
-    const output = await $`opencode --version`.text()
+    const output = await $`${opencodePath} --version`.text()
     const firstLine = output.split(/\r?\n/u)[0] ?? ""
     const trimmed = firstLine.trim()
     return trimmed.length > 0 ? trimmed : null
@@ -393,7 +437,7 @@ export function printTextReport(
     printLine(`${chalk.red("✗")} Config file: Invalid`)
   }
 
-  printLine(chalk.dim(`  (${report.config.path})`))
+  printLine(chalk.dim(`  (${formatPathForDisplay(report.config.path)})`))
   const opencodeSymbol = report.versions.opencode ? chalk.green("✓") : chalk.yellow("⚠")
   printLine(`${opencodeSymbol} opencode: ${report.versions.opencode ?? "not found in PATH"}`)
   const ohMySymbol = report.versions.ohMyOpencode ? chalk.green("✓") : chalk.yellow("⚠")
