@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
-import type { Config } from "../../types/config.js"
+import type { Config } from "#types/config.js"
 import {
   CANCEL_SYMBOL,
   mockCancel,

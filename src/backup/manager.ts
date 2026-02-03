@@ -1,6 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { atomicWrite, isErrnoException } from "../utils/fs.js"
+import { atomicWrite, isErrnoException } from "#utils/fs.js"
 
 export interface BackupInfo {
   timestamp: string

@@ -1,10 +1,10 @@
 import path from "node:path"
 import { cancel, intro, isCancel, outro, text } from "@clack/prompts"
 import chalk from "chalk"
-import { loadConfig } from "../../config/loader.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { printLine } from "../../utils/output.js"
-import type { BaseCommandOptions } from "../types.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { printLine } from "#utils/output.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function exportCommand(
   outputPath: string | undefined,

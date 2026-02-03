@@ -1,6 +1,6 @@
-import { InvalidConfigError, PermissionDeniedError } from "../errors/types.js"
-import { type Config, ConfigSchema } from "../types/config.js"
-import { isErrnoException } from "../utils/fs.js"
+import { InvalidConfigError, PermissionDeniedError } from "#errors/types.js"
+import { type Config, ConfigSchema } from "#types/config.js"
+import { isErrnoException } from "#utils/fs.js"
 import { DEFAULT_CONFIG } from "./defaults.js"
 
 export async function loadConfig(path: string): Promise<Config> {

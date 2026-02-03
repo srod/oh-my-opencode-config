@@ -1,12 +1,12 @@
 import { intro, outro } from "@clack/prompts"
 import chalk from "chalk"
-import { listBackups } from "../../backup/manager.js"
-import { DEFAULT_CONFIG } from "../../config/defaults.js"
-import { loadConfig } from "../../config/loader.js"
-import { resolveConfigPath } from "../../config/resolve.js"
-import { type DiffEntry, generateDiff } from "../../diff/generator.js"
-import { printBlank, printLine } from "../../utils/output.js"
-import type { BaseCommandOptions } from "../types.js"
+import { listBackups } from "#backup/manager.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { type DiffEntry, generateDiff } from "#diff/generator.js"
+import { printBlank, printLine } from "#utils/output.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 interface HistoryEntry {
   timestamp: string

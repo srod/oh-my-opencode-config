@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { type Config, ConfigSchema } from "../../types/config.js"
+import { type Config, ConfigSchema } from "#types/config.js"
 import {
   CANCEL_SYMBOL,
   mockCancel,

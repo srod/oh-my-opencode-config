@@ -1,4 +1,4 @@
-import type { Config } from "../types/config.js"
+import type { Config } from "#types/config.js"
 
 /**
  * Default configuration synced with oh-my-opencode repository.

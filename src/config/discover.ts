@@ -1,6 +1,6 @@
 import path from "node:path"
-import { execaSync } from "../utils/execa.js"
-import { existsSync } from "../utils/fs-sync.js"
+import { execaSync } from "#utils/execa.js"
+import { existsSync } from "#utils/fs-sync.js"
 import { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } from "./paths.js"
 
 type ExistsSyncLike = (path: string) => boolean

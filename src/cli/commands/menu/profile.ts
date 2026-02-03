@@ -1,8 +1,8 @@
 import path from "node:path"
 import { isCancel, select, text } from "@clack/prompts"
 import chalk from "chalk"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
 import {
   deleteProfile as deleteProfileFn,
   listProfiles as listProfilesFn,
@@ -10,9 +10,9 @@ import {
   ProfileNotFoundError,
   saveProfile as saveProfileFn,
   useProfile as useProfileFn,
-} from "../../../profile/manager.js"
-import { printBlank, printLine } from "../../../utils/output.js"
-import type { BaseCommandOptions } from "../../types.js"
+} from "#profile/manager.js"
+import { printBlank, printLine } from "#utils/output.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function menuProfileSave(
   options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,

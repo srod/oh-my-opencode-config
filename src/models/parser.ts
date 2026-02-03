@@ -4,16 +4,16 @@ import {
   AVAILABLE_MODELS_CACHE_TTL_MS,
   MODELS_CACHE_PATH,
   OPENCODE_CONFIG_PATH,
-} from "../config/paths.js"
-import { CacheCorruptedError, CacheMissingError, PermissionDeniedError } from "../errors/types.js"
+} from "#config/paths.js"
+import { CacheCorruptedError, CacheMissingError, PermissionDeniedError } from "#errors/types.js"
 import {
   type CustomModel,
   type Model,
   type ModelsCache,
   ModelsCacheSchema,
   OpenCodeConfigSchema,
-} from "../types/models.js"
-import { isErrnoException } from "../utils/fs.js"
+} from "#types/models.js"
+import { isErrnoException } from "#utils/fs.js"
 
 // In-memory cache for model IDs to avoid repeated shell calls
 let modelIdsCache: Set<string> | undefined

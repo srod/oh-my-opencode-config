@@ -1,13 +1,13 @@
 import { confirm, isCancel } from "@clack/prompts"
 import chalk from "chalk"
-import { listBackups, restoreBackup } from "../../../backup/manager.js"
-import { DEFAULT_CONFIG } from "../../../config/defaults.js"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { formatDiff, formatDiffJson } from "../../../diff/formatter.js"
-import { generateDiff } from "../../../diff/generator.js"
-import { printBlank, printLine, printSeparator } from "../../../utils/output.js"
-import type { BaseCommandOptions } from "../../types.js"
+import { listBackups, restoreBackup } from "#backup/manager.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { formatDiff, formatDiffJson } from "#diff/formatter.js"
+import { generateDiff } from "#diff/generator.js"
+import { printBlank, printLine, printSeparator } from "#utils/output.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function menuDiff(
   options: Pick<BaseCommandOptions, "config" | "json">,

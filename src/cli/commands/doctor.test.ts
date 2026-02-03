@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
-import type { Config, ModelsCache } from "../../types/index.js"
+import type { Config, ModelsCache } from "#types/index.js"
 import {
   mockDiscoverConfigPath,
   mockIntro,

@@ -1,8 +1,8 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { InvalidConfigError, PermissionDeniedError } from "../errors/types.js"
-import { type Config, ConfigSchema } from "../types/config.js"
-import { atomicWrite, fileExists, isErrnoException } from "../utils/fs.js"
+import { InvalidConfigError, PermissionDeniedError } from "#errors/types.js"
+import { type Config, ConfigSchema } from "#types/config.js"
+import { atomicWrite, fileExists, isErrnoException } from "#utils/fs.js"
 import {
   CONFIG_FILE_NAME,
   PROFILE_NAME_MAX_LENGTH,

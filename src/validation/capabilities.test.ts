@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
-import type { Model } from "../types/models.js"
-import { Capability } from "../types/requirements.js"
+import type { Model } from "#types/models.js"
+import { Capability } from "#types/requirements.js"
 import {
   AGENT_REQUIREMENTS,
   getMissingCapabilities,

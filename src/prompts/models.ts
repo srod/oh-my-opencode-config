@@ -1,7 +1,7 @@
 import chalk from "chalk"
-import type { Model } from "../types/models.js"
-import { Capability } from "../types/requirements.js"
-import { type AgentName, validateModelForAgent } from "../validation/capabilities.js"
+import type { Model } from "#types/models.js"
+import { Capability } from "#types/requirements.js"
+import { type AgentName, validateModelForAgent } from "#validation/capabilities.js"
 import { searchableSelect } from "./search.js"
 
 export type ActionValue = "BACK_ACTION"

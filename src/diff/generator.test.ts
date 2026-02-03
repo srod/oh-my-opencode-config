@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Config } from "../types/config.js"
+import type { Config } from "#types/config.js"
 import { generateDiff } from "./generator.js"
 
 describe("generateDiff", () => {

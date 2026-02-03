@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { PermissionDeniedError } from "../errors/types.js"
+import { PermissionDeniedError } from "#errors/types.js"
 import { atomicWrite, fileExists, getFileMtime, handleFileError, isErrnoException } from "./fs.js"
 
 describe("fileExists", () => {

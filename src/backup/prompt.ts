@@ -1,6 +1,6 @@
 import { confirm, isCancel } from "@clack/prompts"
 import chalk from "chalk"
-import { printLine } from "../utils/output.js"
+import { printLine } from "#utils/output.js"
 import { createBackup } from "./manager.js"
 
 export async function promptAndCreateBackup(configPath: string): Promise<boolean> {

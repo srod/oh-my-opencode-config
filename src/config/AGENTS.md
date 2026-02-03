@@ -17,7 +17,7 @@ Core configuration handling: discovery, loading, resolution, writing.
 
 ```typescript
 // CORRECT — use this everywhere
-import { resolveConfigPath } from "../config/resolve.js"
+import { resolveConfigPath } from "#config/resolve.js"
 const configPath = resolveConfigPath(options.config)
 
 // WRONG — never inline this pattern

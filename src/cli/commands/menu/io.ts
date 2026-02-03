@@ -1,14 +1,14 @@
 import path from "node:path"
 import { confirm, isCancel, text } from "@clack/prompts"
 import chalk from "chalk"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { saveConfig } from "../../../config/writer.js"
-import { formatDiff } from "../../../diff/formatter.js"
-import { generateDiff } from "../../../diff/generator.js"
-import { getFileMtime } from "../../../utils/fs.js"
-import { printLine } from "../../../utils/output.js"
-import type { BaseCommandOptions } from "../../types.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { saveConfig } from "#config/writer.js"
+import { formatDiff } from "#diff/formatter.js"
+import { generateDiff } from "#diff/generator.js"
+import { getFileMtime } from "#utils/fs.js"
+import { printLine } from "#utils/output.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function menuExport(
   options: Pick<BaseCommandOptions, "config" | "json">,
@@ -94,7 +94,7 @@ export async function menuImport(
     return
   }
 
-  const { ConfigSchema } = await import("../../../types/config.js")
+  const { ConfigSchema } = await import("#types/config.js")
   const validationResult = ConfigSchema.safeParse(importedRaw)
 
   if (!validationResult.success) {

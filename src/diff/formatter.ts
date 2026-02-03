@@ -1,6 +1,6 @@
 import chalk from "chalk"
-import { colorizeAgent } from "../types/colors.js"
-import { AgentConfigSchema } from "../types/config.js"
+import { colorizeAgent } from "#types/colors.js"
+import { AgentConfigSchema } from "#types/config.js"
 import type { DiffEntry } from "./generator.js"
 
 export function formatDiff(entries: DiffEntry[]): string {

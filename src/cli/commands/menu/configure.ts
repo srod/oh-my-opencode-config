@@ -1,13 +1,13 @@
 import { confirm, isCancel, select, spinner } from "@clack/prompts"
 import chalk from "chalk"
-import { createBackup } from "../../../backup/manager.js"
-import { promptAndCreateBackup } from "../../../backup/prompt.js"
-import { DEFAULT_CONFIG } from "../../../config/defaults.js"
-import { loadConfig } from "../../../config/loader.js"
-import { resolveConfigPath } from "../../../config/resolve.js"
-import { saveConfig } from "../../../config/writer.js"
-import { formatDiff } from "../../../diff/formatter.js"
-import { generateDiff } from "../../../diff/generator.js"
+import { createBackup } from "#backup/manager.js"
+import { promptAndCreateBackup } from "#backup/prompt.js"
+import { DEFAULT_CONFIG } from "#config/defaults.js"
+import { loadConfig } from "#config/loader.js"
+import { resolveConfigPath } from "#config/resolve.js"
+import { saveConfig } from "#config/writer.js"
+import { formatDiff } from "#diff/formatter.js"
+import { generateDiff } from "#diff/generator.js"
 import {
   getAvailableModelIds,
   getAvailableModels,
@@ -15,16 +15,16 @@ import {
   loadCustomModels,
   loadModelsCache,
   mergeModelsCache,
-} from "../../../models/parser.js"
-import { DONE_ACTION, selectAgent } from "../../../prompts/agents.js"
-import { selectModel } from "../../../prompts/models.js"
-import { selectProvider } from "../../../prompts/provider.js"
-import { selectVariant } from "../../../prompts/variants.js"
-import { AGENT_REQUIREMENTS } from "../../../types/requirements.js"
-import { getFileMtime } from "../../../utils/fs.js"
-import { printLine } from "../../../utils/output.js"
-import { isAgentName } from "../../../validation/capabilities.js"
-import type { BaseCommandOptions } from "../../types.js"
+} from "#models/parser.js"
+import { DONE_ACTION, selectAgent } from "#prompts/agents.js"
+import { selectModel } from "#prompts/models.js"
+import { selectProvider } from "#prompts/provider.js"
+import { selectVariant } from "#prompts/variants.js"
+import { AGENT_REQUIREMENTS } from "#types/requirements.js"
+import { getFileMtime } from "#utils/fs.js"
+import { printLine } from "#utils/output.js"
+import { isAgentName } from "#validation/capabilities.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function menuConfigureAgents(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,

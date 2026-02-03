@@ -1,6 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { PermissionDeniedError } from "../errors/types.js"
+import { PermissionDeniedError } from "#errors/types.js"
 
 export async function fileExists(filePath: string): Promise<boolean> {
   return fs

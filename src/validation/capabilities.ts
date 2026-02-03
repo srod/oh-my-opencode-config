@@ -1,5 +1,5 @@
-import type { Model } from "../types/models.js"
-import { AGENT_REQUIREMENTS, type AgentRequirements, Capability } from "../types/requirements.js"
+import type { Model } from "#types/models.js"
+import { AGENT_REQUIREMENTS, type AgentRequirements, Capability } from "#types/requirements.js"
 
 export { AGENT_REQUIREMENTS }
 

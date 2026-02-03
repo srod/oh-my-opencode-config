@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
-import { mockConfirm, mockLog } from "../test-utils/clack-mocks.js"
+import { mockConfirm, mockLog } from "#test-utils/clack-mocks.js"
 import {
   CacheCorruptedError,
   CacheExpiredError,
@@ -17,7 +17,7 @@ mock.module("execa", () => ({
 }))
 
 const mockStat = mock(async () => ({ mtime: new Date() }))
-mock.module("../utils/fs-promises.js", () => ({
+mock.module("#utils/fs-promises.js", () => ({
   stat: mockStat,
 }))
 
