@@ -1,58 +1,59 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { resolveConfigPath } from "./resolve.js"
 
-const mockDiscoverConfigPath = mock((): string | null => null)
-const mockUserConfigPath = "/home/user/.config/Claude/oh-my-Claude.json"
-
-beforeEach(() => {
-  mockDiscoverConfigPath.mockClear()
-})
-
-mock.module("./discover.js", () => ({
-  discoverConfigPath: mockDiscoverConfigPath,
-}))
-
-mock.module("./paths.js", () => ({
-  USER_CONFIG_FULL_PATH: mockUserConfigPath,
-}))
+const MOCK_USER_CONFIG_PATH = "/home/user/.config/opencode/oh-my-opencode.json"
 
 describe("resolveConfigPath", () => {
   test("returns configOption when provided as truthy string", () => {
-    const result = resolveConfigPath("/custom/path/config.json")
+    let discoverCalled = false
+    const result = resolveConfigPath("/custom/path/config.json", {
+      discoverConfigPath: () => {
+        discoverCalled = true
+        return null
+      },
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
     expect(result).toBe("/custom/path/config.json")
-    expect(mockDiscoverConfigPath).not.toHaveBeenCalled()
+    expect(discoverCalled).toBe(false)
   })
 
   test("falls back to discoverConfigPath when configOption is undefined", () => {
-    mockDiscoverConfigPath.mockReturnValue("/discovered/path.json")
-    const result = resolveConfigPath(undefined)
+    const result = resolveConfigPath(undefined, {
+      discoverConfigPath: () => "/discovered/path.json",
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
     expect(result).toBe("/discovered/path.json")
-    expect(mockDiscoverConfigPath).toHaveBeenCalled()
   })
 
   test("falls back to discoverConfigPath when configOption is null", () => {
-    mockDiscoverConfigPath.mockReturnValue("/discovered/path.json")
-    const result = resolveConfigPath(null)
+    const result = resolveConfigPath(null, {
+      discoverConfigPath: () => "/discovered/path.json",
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
     expect(result).toBe("/discovered/path.json")
-    expect(mockDiscoverConfigPath).toHaveBeenCalled()
   })
 
   test("falls back to discoverConfigPath when configOption is empty string", () => {
-    mockDiscoverConfigPath.mockReturnValue("/discovered/path.json")
-    const result = resolveConfigPath("")
+    const result = resolveConfigPath("", {
+      discoverConfigPath: () => "/discovered/path.json",
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
     expect(result).toBe("/discovered/path.json")
-    expect(mockDiscoverConfigPath).toHaveBeenCalled()
   })
 
-  test("falls back to USER_CONFIG_FULL_PATH when both configOption and discoverConfigPath are falsy", () => {
-    mockDiscoverConfigPath.mockReturnValue(null)
-    const result = resolveConfigPath(undefined)
-    expect(result).toBe(mockUserConfigPath)
+  test("falls back to userConfigFullPath when both configOption and discoverConfigPath are falsy", () => {
+    const result = resolveConfigPath(undefined, {
+      discoverConfigPath: () => null,
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
+    expect(result).toBe(MOCK_USER_CONFIG_PATH)
   })
 
   test("uses || semantics: empty string is falsy and falls through", () => {
-    mockDiscoverConfigPath.mockReturnValue(null)
-    const result = resolveConfigPath("")
-    expect(result).toBe(mockUserConfigPath)
+    const result = resolveConfigPath("", {
+      discoverConfigPath: () => null,
+      userConfigFullPath: MOCK_USER_CONFIG_PATH,
+    })
+    expect(result).toBe(MOCK_USER_CONFIG_PATH)
   })
 })
