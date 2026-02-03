@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test"
-import fs from "node:fs"
 import path from "node:path"
-import { execaSync } from "execa"
 import { asMock } from "../test-utils/mocks.js"
 
 const TEST_USER_CONFIG_FULL_PATH = "/home/test-user/.config/opencode/oh-my-opencode.json"
@@ -22,30 +20,30 @@ mock.module("./paths.js", () => ({
   AVAILABLE_MODELS_CACHE_TTL_MS: 60 * 60 * 1000,
 }))
 
-const { discoverConfigPath } = await import("./discover.js")
-const { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } = await import("./paths.js")
-
-mock.module("node:fs", () => ({
-  default: {
-    existsSync: mock(() => false),
-  },
+mock.module("../utils/fs-sync.js", () => ({
+  existsSync: mock(() => false),
 }))
 
-mock.module("execa", () => ({
+mock.module("../utils/execa.js", () => ({
   execaSync: mock(() => ({ stdout: "" })),
 }))
 
+const { existsSync } = await import("../utils/fs-sync.js")
+const { execaSync } = await import("../utils/execa.js")
+const { discoverConfigPath } = await import("./discover.js")
+const { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } = await import("./paths.js")
+
 describe("discoverConfigPath", () => {
   beforeEach(() => {
-    asMock(fs.existsSync).mockClear()
+    asMock(existsSync).mockClear()
     asMock(execaSync).mockClear()
-    asMock(fs.existsSync).mockImplementation(() => false)
+    asMock(existsSync).mockImplementation(() => false)
     asMock(execaSync).mockImplementation(() => ({ stdout: "" }))
   })
 
   test("should find project config in CWD", () => {
     const cwdConfigPath = path.join(process.cwd(), PROJECT_CONFIG_REL_PATH)
-    asMock(fs.existsSync).mockImplementation((p) => p === cwdConfigPath)
+    asMock(existsSync).mockImplementation((p) => p === cwdConfigPath)
 
     const result = discoverConfigPath()
     expect(result).toBe(cwdConfigPath)
@@ -55,7 +53,7 @@ describe("discoverConfigPath", () => {
     const gitRoot = "/fake/git/root"
     const gitConfigPath = path.join(gitRoot, PROJECT_CONFIG_REL_PATH)
 
-    asMock(fs.existsSync).mockImplementation((p) => p === gitConfigPath)
+    asMock(existsSync).mockImplementation((p) => p === gitConfigPath)
     asMock(execaSync).mockImplementation(() => ({ stdout: gitRoot }))
 
     const result = discoverConfigPath()
@@ -64,7 +62,7 @@ describe("discoverConfigPath", () => {
   })
 
   test("should fall back to user config if no project config", () => {
-    asMock(fs.existsSync).mockImplementation((p) => p === USER_CONFIG_FULL_PATH)
+    asMock(existsSync).mockImplementation((p) => p === USER_CONFIG_FULL_PATH)
     asMock(execaSync).mockImplementation(() => {
       throw new Error("not a git repo")
     })
@@ -74,7 +72,7 @@ describe("discoverConfigPath", () => {
   })
 
   test("should return null if no config found", () => {
-    asMock(fs.existsSync).mockImplementation(() => false)
+    asMock(existsSync).mockImplementation(() => false)
     asMock(execaSync).mockImplementation(() => {
       throw new Error("not a git repo")
     })

@@ -1,5 +1,17 @@
 import { mock } from "bun:test"
 import realFs from "node:fs/promises"
+import {
+  mockCancel,
+  mockConfirm,
+  mockIntro,
+  mockIsCancel,
+  mockLog,
+  mockOutro,
+  mockSelect,
+  mockSpinner,
+  mockSpinnerInstance,
+  mockText,
+} from "../../test-utils/clack-mocks.js"
 import type { ModelsCache } from "../../types/index.js"
 import { AGENT_REQUIREMENTS } from "../../types/requirements.js"
 
@@ -7,43 +19,18 @@ import { AGENT_REQUIREMENTS } from "../../types/requirements.js"
 export const realStat = realFs.stat.bind(realFs)
 
 export const CANCEL_SYMBOL = Symbol.for("clack:cancel")
-
-export const mockIntro = mock(() => {})
-export const mockOutro = mock(() => {})
-export const mockCancel = mock((_msg?: string) => {})
-export const mockConfirm = mock(() => Promise.resolve(false))
-export const mockIsCancel = mock((value: unknown) => value === CANCEL_SYMBOL)
-export const mockText = mock(() => Promise.resolve(""))
-export const mockSelect = mock(() => Promise.resolve(""))
-const mockSpinnerStart = mock(() => {})
-const mockSpinnerStop = mock(() => {})
-export const mockSpinner = mock(() => ({ start: mockSpinnerStart, stop: mockSpinnerStop }))
-export const mockSpinnerInstance = { start: mockSpinnerStart, stop: mockSpinnerStop }
-export const mockLog = {
-  message: mock((_text?: string) => {}),
-  error: mock(() => {}),
-  info: mock(() => {}),
-  warn: mock(() => {}),
-  success: mock(() => {}),
-  step: mock(() => {}),
+export {
+  mockCancel,
+  mockConfirm,
+  mockIntro,
+  mockIsCancel,
+  mockLog,
+  mockOutro,
+  mockSelect,
+  mockSpinner,
+  mockSpinnerInstance,
+  mockText,
 }
-
-mock.module("@clack/prompts", () => ({
-  intro: mockIntro,
-  outro: mockOutro,
-  cancel: mockCancel,
-  confirm: mockConfirm,
-  isCancel: mockIsCancel,
-  log: mockLog,
-  spinner: mockSpinner,
-  text: mockText,
-  select: mockSelect,
-  multiselect: mock(() => Promise.resolve([])),
-  password: mock(() => Promise.resolve("")),
-  group: mock(() => Promise.resolve({})),
-  note: mock(() => {}),
-  selectKey: mock(() => Promise.resolve("")),
-}))
 
 export const mockPrintLine = mock((_text?: string) => {})
 export const mockPrintBlank = mock(() => {})

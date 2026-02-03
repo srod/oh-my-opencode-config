@@ -13,6 +13,9 @@ import {
   mockIntro,
   mockIsCancel,
   mockLoadConfig,
+  mockLoadCustomModels,
+  mockLoadModelsCache,
+  mockMergeModelsCache,
   mockOutro,
   mockPrintLine,
   mockPromptAndCreateBackup,
@@ -74,6 +77,14 @@ function resetAllMocks() {
   mockValidateCacheAge.mockClear()
   mockStat.mockClear()
   mockStat.mockImplementation(() => Promise.resolve({ mtime: new Date(1000) }))
+
+  // Reset shared mocks to prevent pollution from other test files
+  mockLoadModelsCache.mockClear()
+  mockLoadModelsCache.mockImplementation(() => Promise.resolve({}))
+  mockLoadCustomModels.mockClear()
+  mockLoadCustomModels.mockImplementation(() => Promise.resolve({}))
+  mockMergeModelsCache.mockClear()
+  mockMergeModelsCache.mockImplementation((a) => a)
 }
 
 const defaultOptions = { config: "/fake/config.json" }

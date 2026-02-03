@@ -398,7 +398,7 @@ describe("doctorCommand", () => {
 
   describe("models cache loading", () => {
     test("continues when loadModelsCache throws", async () => {
-      mockLoadModelsCache.mockImplementation(() => Promise.reject(new Error("cache missing")))
+      mockLoadModelsCache.mockImplementationOnce(() => Promise.reject(new Error("cache missing")))
 
       await runDoctor({ json: true })
 

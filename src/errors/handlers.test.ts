@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
-import { handleError, offerCacheRefresh, validateCacheAge } from "./handlers.js"
+import { mockConfirm, mockLog } from "../test-utils/clack-mocks.js"
 import {
   CacheCorruptedError,
   CacheExpiredError,
@@ -10,31 +10,18 @@ import {
   PermissionDeniedError,
 } from "./types.js"
 
-const mockLog = {
-  error: mock(() => {}),
-  info: mock(() => {}),
-  warn: mock(() => {}),
-  success: mock(() => {}),
-  step: mock(() => {}),
-}
-
-const mockConfirm = mock(async () => true)
-
-mock.module("@clack/prompts", () => ({
-  log: mockLog,
-  confirm: mockConfirm,
-  isCancel: (val: unknown) => val === Symbol.for("clack:cancel"),
-}))
-
 const mockExeca = mock(async () => ({}))
 mock.module("execa", () => ({
   execa: mockExeca,
+  execaSync: mock(() => ({ stdout: "" })),
 }))
 
 const mockStat = mock(async () => ({ mtime: new Date() }))
-mock.module("node:fs/promises", () => ({
+mock.module("../utils/fs-promises.js", () => ({
   stat: mockStat,
 }))
+
+const { handleError, offerCacheRefresh, validateCacheAge } = await import("./handlers.js")
 
 describe("Error Handlers", () => {
   const exitSpy = spyOn(process, "exit").mockImplementation(() => undefined as never)
