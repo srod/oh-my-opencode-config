@@ -15,9 +15,13 @@ Easily configure which models and variants are used by different agents and cate
 
 ## Installation
 
-Requires [Bun](https://bun.sh/).
+This CLI requires [Bun](https://bun.sh/) as its runtime.
 
 ```bash
+# Install Bun first (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
+# Then install the CLI
 npm install -g oh-my-opencode-config
 ```
 
@@ -64,6 +68,21 @@ Lists all available configuration backups with their timestamps.
 ### `backup restore <timestamp>`
 Restores the configuration from a specific backup.
 
+### `profile save [name]`
+Save current configuration as a named profile. If no name is provided, prompts interactively.
+
+### `profile use [name]`
+Switch to a previously saved profile. If no name is provided, shows an interactive selection.
+
+### `profile list`
+List all available saved profiles.
+
+### `profile delete [name]`
+Delete a saved profile. If no name is provided, prompts interactively.
+
+### `profile rename [old] [new]`
+Rename an existing profile.
+
 ### `diff`
 Shows the difference between your current configuration and the default settings with color coding and summary statistics.
 
@@ -72,6 +91,27 @@ Manually refresh the available models cache from `opencode models`.
 
 ### `clear-cache`
 Clear the available models cache to force a fresh fetch on next run.
+
+### `doctor`
+Diagnose configuration issues and validate setup. Checks for:
+- Missing or corrupted cache
+- Invalid model assignments
+- Capability mismatches
+- Defunct agent configurations
+
+Use `--fix` to automatically resolve cache issues when possible.
+
+### `import [path]`
+Import configuration from a JSON file. If no path is provided, prompts for file selection.
+
+### `export [path]`
+Export current configuration to a JSON file. If no path is provided, prompts for destination.
+
+### `undo`
+Undo the last configuration change by restoring the most recent backup.
+
+### `history`
+Show configuration change history from backups. Use `--limit <number>` to restrict the number of entries shown.
 
 ## Global Flags
 
