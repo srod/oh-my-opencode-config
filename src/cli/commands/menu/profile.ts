@@ -1,6 +1,7 @@
 import path from "node:path"
 import { isCancel, select, text } from "@clack/prompts"
 import chalk from "chalk"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import {
@@ -12,7 +13,6 @@ import {
   useProfile as useProfileFn,
 } from "#profile/manager.js"
 import { printBlank, printLine } from "#utils/output.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function menuProfileSave(
   options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,

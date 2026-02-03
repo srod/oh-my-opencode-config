@@ -1,6 +1,7 @@
 import path from "node:path"
 import { cancel, confirm, isCancel, outro, select, text } from "@clack/prompts"
 import chalk from "chalk"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { handleError } from "#errors/handlers.js"
@@ -15,7 +16,6 @@ import {
   useProfile,
 } from "#profile/manager.js"
 import { printBlank, printLine } from "#utils/output.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)

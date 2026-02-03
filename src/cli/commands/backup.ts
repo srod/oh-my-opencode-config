@@ -1,9 +1,9 @@
 import { cancel, isCancel, outro, select } from "@clack/prompts"
 import chalk from "chalk"
 import { listBackups, restoreBackup } from "#backup/manager.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { printBlank, printLine, printTable } from "#utils/output.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function backupListCommand(options: Pick<BaseCommandOptions, "config" | "json">) {
   const configPath = resolveConfigPath(options.config)

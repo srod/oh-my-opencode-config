@@ -1,4 +1,6 @@
 import chalk from "chalk"
+import { buildDoctorReport, printTextReport } from "#cli/commands/doctor.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { loadCustomModels, loadModelsCache, mergeModelsCache } from "#models/parser.js"
@@ -6,8 +8,6 @@ import { colorizeAgent } from "#types/colors.js"
 import { AGENT_REQUIREMENTS } from "#types/requirements.js"
 import { printLine, printSeparator } from "#utils/output.js"
 import { isAgentName, validateModelForAgent } from "#validation/capabilities.js"
-import type { BaseCommandOptions } from "#cli/types.js"
-import { buildDoctorReport, printTextReport } from "#cli/commands/doctor.js"
 
 export async function menuStatus(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig">,

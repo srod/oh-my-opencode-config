@@ -2,6 +2,7 @@ import { cancel, confirm, intro, isCancel, outro, spinner } from "@clack/prompts
 import chalk from "chalk"
 import { cleanupOldBackups, createBackup } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { MODELS_CACHE_PATH } from "#config/paths.js"
 import { resolveConfigPath } from "#config/resolve.js"
@@ -27,7 +28,6 @@ import { getFileMtime } from "#utils/fs.js"
 import { printLine } from "#utils/output.js"
 import type { AgentName } from "#validation/capabilities.js"
 import { isAgentName } from "#validation/capabilities.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 interface ConfigureContext {
   configPath: string

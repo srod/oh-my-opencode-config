@@ -2,6 +2,7 @@ import { confirm, intro, outro, select } from "@clack/prompts"
 import chalk from "chalk"
 import { cleanupOldBackups, createBackup } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { DEFAULT_CONFIG } from "#config/defaults.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
@@ -10,7 +11,6 @@ import { formatDiff } from "#diff/formatter.js"
 import { generateDiff } from "#diff/generator.js"
 import type { Config } from "#types/config.js"
 import { printLine } from "#utils/output.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 const ECONOMY_CONFIG: Config = {
   agents: {

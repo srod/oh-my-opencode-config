@@ -1,12 +1,12 @@
 import { intro, outro } from "@clack/prompts"
 import chalk from "chalk"
+import type { BaseCommandOptions } from "#cli/types.js"
 import { DEFAULT_CONFIG } from "#config/defaults.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { formatDiff, formatDiffJson } from "#diff/formatter.js"
 import { generateDiff } from "#diff/generator.js"
 import { printLine, printSeparator } from "#utils/output.js"
-import type { BaseCommandOptions } from "#cli/types.js"
 
 export async function diffCommand(options: Pick<BaseCommandOptions, "config" | "json">) {
   const configPath = resolveConfigPath(options.config)
