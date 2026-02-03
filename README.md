@@ -216,11 +216,10 @@ If another process modifies the configuration while you are using the CLI, it wi
 
 The default model assignments in this tool are synchronized with the [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) repository.
 
-**Primary Sources:**
-- **Agents**: [`src/shared/model-requirements.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts) (Defines fallback chains for agents like `sisyphus`, `oracle`)
-- **Categories**: [`src/tools/delegate-task/constants.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/tools/delegate-task/constants.ts) (Defines defaults for categories like `visual-engineering`, `ultrabrain`)
+**Source of Truth:**
+- [`src/shared/model-requirements.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts) — Defines fallback chains for both agents (`sisyphus`, `oracle`, etc.) and categories (`visual-engineering`, `ultrabrain`, etc.)
 
-If the defaults in this CLI seem outdated, compare them against these files in the upstream repository.
+If the defaults in this CLI seem outdated, compare them against this file in the upstream repository.
 
 ## Contributing
 
