@@ -60,6 +60,14 @@ function formatDuration(ms: number): string {
   return "just now"
 }
 
+function splitModelReference(value: string): { provider: string; modelId: string } | null {
+  const slashIndex = value.indexOf("/")
+  if (slashIndex <= 0 || slashIndex === value.length - 1) {
+    return null
+  }
+  return { provider: value.slice(0, slashIndex), modelId: value.slice(slashIndex + 1) }
+}
+
 async function checkModelCache(): Promise<{
   exists: boolean
   age: number | null
@@ -135,8 +143,8 @@ function checkConfigSchema(config: Config): Issue[] {
       continue
     }
 
-    const parts = agentConfig.model.split("/")
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    const modelRef = splitModelReference(agentConfig.model)
+    if (!modelRef) {
       issues.push({
         severity: "error",
         category: "config",
@@ -168,9 +176,11 @@ function checkAgentCapabilities(config: Config, mergedCache: ModelsCache): Issue
       continue
     }
 
-    const parts = agentConfig.model.split("/")
-    const provider = parts[0]
-    const modelId = parts[1]
+    const modelRef = splitModelReference(agentConfig.model)
+    if (!modelRef) {
+      continue
+    }
+    const { provider, modelId } = modelRef
 
     if (!provider || !modelId) {
       continue

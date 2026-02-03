@@ -10,6 +10,8 @@ import { formatDiff } from "../../../diff/formatter.js"
 import { generateDiff } from "../../../diff/generator.js"
 import {
   getAvailableModelIds,
+  getAvailableModels,
+  getAvailableProviders,
   loadCustomModels,
   loadModelsCache,
   mergeModelsCache,
@@ -342,23 +344,6 @@ export async function menuConfigureCategories(
   await createBackup(configPath)
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   printLine(chalk.green("Configuration updated! Backup created."))
-}
-
-async function getAvailableProviders(): Promise<string[]> {
-  const modelsCache = await loadModelsCache()
-  return Object.keys(modelsCache)
-}
-
-async function getAvailableModels(
-  modelsCache: Awaited<ReturnType<typeof loadModelsCache>>,
-  provider: string,
-): Promise<{ id: string; name?: string }[]> {
-  const providerData = modelsCache[provider]
-  if (!providerData) return []
-  return Object.entries(providerData.models).map(([id, model]) => ({
-    id,
-    name: typeof model.name === "string" ? model.name : undefined,
-  }))
 }
 
 export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">): Promise<void> {

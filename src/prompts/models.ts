@@ -32,7 +32,15 @@ export async function selectModel(
   while (true) {
     const modelOptions = filteredModels.map((model) => {
       const validation = validateModelForAgent(model, options.agentName)
-      const isCurrent = model.id === options.currentModelId
+      const currentModelId = options.currentModelId
+      const isCurrent =
+        model.id === currentModelId ||
+        (currentModelId?.includes("/") &&
+          !model.id.includes("/") &&
+          currentModelId.endsWith(`/${model.id}`)) ||
+        (!currentModelId?.includes("/") &&
+          model.id.includes("/") &&
+          model.id.endsWith(`/${currentModelId}`))
 
       let prefix = ""
       if (isCurrent) prefix += chalk.blue("● ")

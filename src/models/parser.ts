@@ -130,7 +130,9 @@ export async function getAvailableModelIds(
 
   // Fetch from opencode CLI
   try {
-    const result = await $`opencode models`.text()
+    const result = refresh
+      ? await $`opencode models --refresh`.text()
+      : await $`opencode models`.text()
     const lines = result.split("\n").filter((line) => line.includes("/"))
     modelIdsCache = new Set(lines.map((line) => line.trim()))
 
