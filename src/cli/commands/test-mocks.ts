@@ -115,6 +115,7 @@ mock.module("../../config/discover.js", () => ({ discoverConfigPath: mockDiscove
 mock.module("../../config/paths.js", () => ({
   MODELS_CACHE_PATH: "/fake/models.json",
   USER_CONFIG_FULL_PATH: "/fake/default-config.json",
+  OPENCODE_CONFIG_PATH: "/fake/opencode.json",
 }))
 
 export const mockPromptAndCreateBackup = mock(() => Promise.resolve(true))

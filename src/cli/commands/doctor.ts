@@ -1,8 +1,10 @@
+import path from "node:path"
 import { intro, outro, spinner } from "@clack/prompts"
 import { $ } from "bun"
 import chalk from "chalk"
+import { z } from "zod"
 import { loadConfig } from "../../config/loader.js"
-import { MODELS_CACHE_PATH } from "../../config/paths.js"
+import { MODELS_CACHE_PATH, OPENCODE_CONFIG_PATH } from "../../config/paths.js"
 import { resolveConfigPath } from "../../config/resolve.js"
 import { loadCustomModels, loadModelsCache, mergeModelsCache } from "../../models/parser.js"
 import { colorizeAgent } from "../../types/colors.js"
@@ -14,12 +16,22 @@ import type { BaseCommandOptions } from "../types.js"
 
 type IssueSeverity = "error" | "warning" | "info"
 
+const PackageJsonSchema = z.object({
+  version: z.string(),
+})
+
 interface Issue {
   severity: IssueSeverity
   category: string
   message: string
   suggestion?: string
   autoFixable?: boolean
+}
+
+interface ModelAssignment {
+  name: string
+  model: string
+  variant?: string
 }
 
 interface DiagnosticReport {
@@ -29,6 +41,20 @@ interface DiagnosticReport {
     errors: number
     warnings: number
     info: number
+  }
+  versions: {
+    opencode: string | null
+    ohMyOpencode: string | null
+  }
+  summary: {
+    agentsConfigured: number
+    agentsTotal: number
+    categoriesConfigured: number
+    overrides: number
+  }
+  assignments: {
+    agents: ModelAssignment[]
+    categories: ModelAssignment[]
   }
   cache: {
     exists: boolean
@@ -68,6 +94,70 @@ function splitModelReference(value: string): { provider: string; modelId: string
   return { provider: value.slice(0, slashIndex), modelId: value.slice(slashIndex + 1) }
 }
 
+function collectAssignments(
+  entries: Record<string, { model?: string; variant?: string }> | undefined,
+): ModelAssignment[] {
+  if (!entries) {
+    return []
+  }
+
+  const assignments: ModelAssignment[] = []
+
+  for (const [name, value] of Object.entries(entries)) {
+    if (typeof value.model !== "string" || value.model.length === 0) {
+      continue
+    }
+    assignments.push({
+      name,
+      model: value.model,
+      variant: typeof value.variant === "string" ? value.variant : undefined,
+    })
+  }
+
+  return assignments.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+async function readPackageVersion(packagePath: string): Promise<string | null> {
+  const file = Bun.file(packagePath)
+  if (!(await file.exists())) {
+    return null
+  }
+
+  try {
+    const content = await file.text()
+    const parsed = PackageJsonSchema.safeParse(JSON.parse(content))
+    if (!parsed.success) {
+      return null
+    }
+    const version = parsed.data.version.trim()
+    return version.length > 0 ? version : null
+  } catch {
+    return null
+  }
+}
+
+async function getOhMyOpencodeVersion(opencodeConfigPath?: string): Promise<string | null> {
+  const configPath = opencodeConfigPath ?? OPENCODE_CONFIG_PATH
+  const configDir = path.dirname(configPath)
+  const configDirPackage = path.join(configDir, "node_modules", "oh-my-opencode", "package.json")
+  const fromConfigDir = await readPackageVersion(configDirPackage)
+  if (fromConfigDir) {
+    return fromConfigDir
+  }
+
+  const binPath = Bun.which("oh-my-opencode")
+  if (binPath) {
+    const binDir = path.dirname(binPath)
+    const binPackage = path.join(binDir, "..", "oh-my-opencode", "package.json")
+    const fromBin = await readPackageVersion(binPackage)
+    if (fromBin) {
+      return fromBin
+    }
+  }
+
+  return null
+}
+
 async function checkModelCache(): Promise<{
   exists: boolean
   age: number | null
@@ -98,6 +188,22 @@ async function refreshCache(): Promise<boolean> {
     return result.length > 0
   } catch {
     return false
+  }
+}
+
+async function getOpencodeVersion(): Promise<string | null> {
+  const opencodePath = Bun.which("opencode")
+  if (!opencodePath) {
+    return null
+  }
+
+  try {
+    const output = await $`opencode --version`.text()
+    const firstLine = output.split(/\r?\n/u)[0] ?? ""
+    const trimmed = firstLine.trim()
+    return trimmed.length > 0 ? trimmed : null
+  } catch {
+    return null
   }
 }
 
@@ -220,6 +326,14 @@ function generateReport(
   configPath: string,
   configValid: boolean,
   issues: Issue[],
+  versions: { opencode: string | null; ohMyOpencode: string | null },
+  summary: {
+    agentsConfigured: number
+    agentsTotal: number
+    categoriesConfigured: number
+    overrides: number
+  },
+  assignments: { agents: ModelAssignment[]; categories: ModelAssignment[] },
 ): DiagnosticReport {
   const errors = issues.filter((i) => i.severity === "error").length
   const warnings = issues.filter((i) => i.severity === "warning").length
@@ -229,6 +343,9 @@ function generateReport(
     healthy: errors === 0 && !cacheStatus.outdated,
     issues,
     stats: { errors, warnings, info },
+    versions,
+    summary,
+    assignments,
     cache: cacheStatus,
     config: { path: configPath, valid: configValid },
     agents: {
@@ -239,8 +356,18 @@ function generateReport(
   }
 }
 
-function printTextReport(report: DiagnosticReport): void {
-  intro(chalk.bold("🔍 Diagnosing configuration..."))
+export function printTextReport(
+  report: DiagnosticReport,
+  options?: { showIntroOutro?: boolean },
+): void {
+  const showIntroOutro = options?.showIntroOutro ?? true
+
+  if (showIntroOutro) {
+    intro(chalk.bold("🔍 Diagnosing configuration..."))
+  } else {
+    printBlank()
+    printLine(chalk.bold("🔍 Diagnosing configuration..."))
+  }
 
   printBlank()
 
@@ -267,6 +394,39 @@ function printTextReport(report: DiagnosticReport): void {
   }
 
   printLine(chalk.dim(`  (${report.config.path})`))
+  const opencodeSymbol = report.versions.opencode ? chalk.green("✓") : chalk.yellow("⚠")
+  printLine(`${opencodeSymbol} opencode: ${report.versions.opencode ?? "not found in PATH"}`)
+  const ohMySymbol = report.versions.ohMyOpencode ? chalk.green("✓") : chalk.yellow("⚠")
+  printLine(`${ohMySymbol} oh-my-opencode: ${report.versions.ohMyOpencode ?? "not found"}`)
+
+  printBlank()
+  printLine(chalk.bold("Configuration summary"))
+  printLine(
+    `${chalk.green("✓")} Agents configured: ${report.summary.agentsConfigured}/${report.summary.agentsTotal}`,
+  )
+  printLine(`${chalk.green("✓")} Categories configured: ${report.summary.categoriesConfigured}`)
+  printLine(`${chalk.green("✓")} Overrides: ${report.summary.overrides}`)
+
+  printBlank()
+  printLine(chalk.bold("Configured models"))
+  if (report.assignments.agents.length === 0) {
+    printLine(chalk.dim("  Agents: none"))
+  } else {
+    printLine(chalk.dim("  Agents:"))
+    for (const assignment of report.assignments.agents) {
+      const variant = assignment.variant ? ` (${assignment.variant})` : ""
+      printLine(`  ● ${colorizeAgent(assignment.name)}: ${assignment.model}${variant}`)
+    }
+  }
+  if (report.assignments.categories.length === 0) {
+    printLine(chalk.dim("  Categories: none"))
+  } else {
+    printLine(chalk.dim("  Categories:"))
+    for (const assignment of report.assignments.categories) {
+      const variant = assignment.variant ? ` (${assignment.variant})` : ""
+      printLine(`  ● ${assignment.name}: ${assignment.model}${variant}`)
+    }
+  }
 
   const agentIssues = report.issues.filter((i) => i.category === "agent")
   const configIssues = report.issues.filter((i) => i.category === "config")
@@ -314,13 +474,17 @@ function printTextReport(report: DiagnosticReport): void {
     printLine(`Issues found: ${parts.join(", ")}`)
   }
 
-  outro("")
+  if (showIntroOutro) {
+    outro("")
+  }
 }
 
-export async function doctorCommand(
-  options: Pick<BaseCommandOptions, "config" | "json" | "opencodeConfig"> & { fix?: boolean },
-): Promise<void> {
+export async function buildDoctorReport(
+  options: Pick<BaseCommandOptions, "config" | "opencodeConfig"> & { fix?: boolean },
+): Promise<DiagnosticReport> {
   const configPath = resolveConfigPath(options.config)
+  const opencodeVersion = await getOpencodeVersion()
+  const ohMyOpencodeVersion = await getOhMyOpencodeVersion(options.opencodeConfig)
 
   const cacheStatus = await checkModelCache()
 
@@ -392,7 +556,37 @@ export async function doctorCommand(
   issues.push(...checkConfigSchema(config))
   issues.push(...checkAgentCapabilities(config, mergedCache))
 
-  const report = generateReport(cacheStatus, configPath, configValid, issues)
+  const assignments = {
+    agents: collectAssignments(config.agents),
+    categories: collectAssignments(config.categories),
+  }
+  const summary = {
+    agentsConfigured: assignments.agents.length,
+    agentsTotal: Object.keys(AGENT_REQUIREMENTS).length,
+    categoriesConfigured: assignments.categories.length,
+    overrides: assignments.agents.length + assignments.categories.length,
+  }
+
+  const report = generateReport(
+    cacheStatus,
+    configPath,
+    configValid,
+    issues,
+    {
+      opencode: opencodeVersion,
+      ohMyOpencode: ohMyOpencodeVersion,
+    },
+    summary,
+    assignments,
+  )
+
+  return report
+}
+
+export async function doctorCommand(
+  options: Pick<BaseCommandOptions, "config" | "json" | "opencodeConfig"> & { fix?: boolean },
+): Promise<void> {
+  const report = await buildDoctorReport(options)
 
   if (options.json) {
     printLine(JSON.stringify(report, null, 2))
