@@ -151,10 +151,6 @@ async function configureAgentFlow(
           break
         }
 
-        if (modelResult === "SEARCH_ACTION" || modelResult === "SHOW_ALL_ACTION") {
-          break
-        }
-
         selectedModel = modelResult
         step = "VARIANT"
         break

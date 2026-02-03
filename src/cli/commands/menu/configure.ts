@@ -116,9 +116,6 @@ export async function menuConfigureAgents(
           step = "PROVIDER"
           continue
         }
-        if (modelResult === "SEARCH_ACTION" || modelResult === "SHOW_ALL_ACTION") {
-          continue
-        }
         selectedModel = modelResult
         step = "VARIANT"
       } else if (step === "VARIANT") {
@@ -288,9 +285,6 @@ export async function menuConfigureCategories(
         }
         if (modelResult === "BACK_ACTION") {
           step = "PROVIDER"
-          continue
-        }
-        if (modelResult === "SEARCH_ACTION" || modelResult === "SHOW_ALL_ACTION") {
           continue
         }
         selectedModel = modelResult

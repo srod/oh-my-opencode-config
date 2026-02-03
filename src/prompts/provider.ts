@@ -1,5 +1,5 @@
-import { select } from "@clack/prompts"
 import chalk from "chalk"
+import { searchableSelect } from "./search.js"
 
 export type ProviderAction = "BACK_ACTION"
 
@@ -7,23 +7,19 @@ export async function selectProvider(
   providers: string[],
   canGoBack = false,
 ): Promise<string | symbol | ProviderAction> {
-  const providerOptions = providers.map((provider) => ({
-    value: provider,
-    label: provider,
-    hint: chalk.dim(`Select to see ${provider} models`),
-  }))
+  const sortedProviders = [...providers].sort((a, b) => a.localeCompare(b))
 
-  const backOption = canGoBack
-    ? [
-        {
-          value: "BACK_ACTION",
-          label: `${chalk.yellow("←")} Back to agent selection`,
-        },
-      ]
-    : []
-
-  return select({
-    message: "Select provider",
-    options: [...backOption, ...providerOptions],
+  return searchableSelect({
+    items: sortedProviders,
+    getOption: (provider) => ({
+      value: provider,
+      label: provider,
+      hint: chalk.dim(`Select to see ${provider} models`),
+    }),
+    getSearchText: (provider) => provider,
+    message: () => "Select provider",
+    searchPlaceholder: "e.g. openai",
+    backLabel: "Back to agent selection",
+    canGoBack,
   })
 }
