@@ -3,10 +3,29 @@ import fs from "node:fs"
 import path from "node:path"
 import { execaSync } from "execa"
 import { asMock } from "../test-utils/mocks.js"
-import { discoverConfigPath } from "./discover.js"
-import { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } from "./paths.js"
 
-mock.module("fs", () => ({
+const TEST_USER_CONFIG_FULL_PATH = "/home/test-user/.config/opencode/oh-my-opencode.json"
+mock.module("./paths.js", () => ({
+  CONFIG_FILE_NAME: "oh-my-opencode.json",
+  PROJECT_CONFIG_DIR: ".opencode",
+  USER_CONFIG_DIR: path.join(".config", "opencode"),
+  PROJECT_CONFIG_REL_PATH: path.join(".opencode", "oh-my-opencode.json"),
+  USER_CONFIG_FULL_PATH: TEST_USER_CONFIG_FULL_PATH,
+  OPENCODE_CONFIG_DIR: "/home/test-user/.config/opencode",
+  OPENCODE_CONFIG_FILE: "opencode.json",
+  OPENCODE_CONFIG_PATH: "/home/test-user/.config/opencode/opencode.json",
+  MODELS_CACHE_DIR: path.join(".cache", "opencode"),
+  MODELS_CACHE_FILE: "models.json",
+  MODELS_CACHE_PATH: "/home/test-user/.cache/opencode/models.json",
+  AVAILABLE_MODELS_CACHE_FILE: "available-models.json",
+  AVAILABLE_MODELS_CACHE_PATH: "/home/test-user/.cache/opencode/available-models.json",
+  AVAILABLE_MODELS_CACHE_TTL_MS: 60 * 60 * 1000,
+}))
+
+const { discoverConfigPath } = await import("./discover.js")
+const { PROJECT_CONFIG_REL_PATH, USER_CONFIG_FULL_PATH } = await import("./paths.js")
+
+mock.module("node:fs", () => ({
   default: {
     existsSync: mock(() => false),
   },
