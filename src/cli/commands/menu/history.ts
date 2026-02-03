@@ -36,9 +36,12 @@ export async function menuDiff(
   printLine(formatDiff(diffEntries))
   printLine("")
   printSeparator()
-  printLine(
-    `Summary: ${chalk.green(`${adds.length} added`)}${adds.length && modifies.length ? ", " : ""}${chalk.yellow(`${modifies.length} modified`)}${(adds.length || modifies.length) && removes.length ? ", " : ""}${chalk.red(`${removes.length} removed`)}`,
-  )
+  const summaryParts = [
+    chalk.green(`${adds.length} added`),
+    chalk.yellow(`${modifies.length} modified`),
+    chalk.red(`${removes.length} removed`),
+  ]
+  printLine(`Summary: ${summaryParts.join(" ")}`)
 }
 
 export async function menuHistory(
