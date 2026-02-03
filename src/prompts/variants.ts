@@ -1,7 +1,7 @@
 import { select } from "@clack/prompts"
 import chalk from "chalk"
 
-export const VARIANTS = ["low", "medium", "high", "max"] as const
+export const VARIANTS = ["low", "medium", "high", "xhigh", "max"] as const
 export type VariantAction = "BACK_ACTION"
 
 export async function selectVariant(
