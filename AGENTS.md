@@ -110,7 +110,7 @@ src/
 - File tests: `fs.mkdtemp` + `os.tmpdir()` for isolation
 - Shared mock setup: `src/cli/commands/test-mocks.ts`
 - Mock helper: `src/test-utils/mocks.ts` (`asMock()`)
-- **Baseline**: 224 pass, 7 fail (pre-existing cross-file mock pollution in handlers.test.ts)
+- **Baseline**: 224 pass, 0 fail
 
 ## Anti-Patterns
 
