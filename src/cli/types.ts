@@ -9,4 +9,5 @@ export interface BaseCommandOptions {
   verbose?: boolean
   dryRun?: boolean
   refresh?: boolean
+  template?: string
 }

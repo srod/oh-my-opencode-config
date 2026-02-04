@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { InvalidConfigError } from "#errors/types.js"
-import type { Config } from "#types/config.js"
+import { type Config, ConfigSchema } from "#types/config.js"
 import {
   DanglingSymlinkError,
   deleteProfile,
@@ -156,6 +156,60 @@ describe("profile manager", () => {
       const parsed = JSON.parse(content)
 
       expect(parsed.agents?.oracle?.model).toBe("claude-4")
+    })
+
+    test("applies template and deep merges with config overrides", async () => {
+      const templatePath = path.join(tempDir, "custom-template.json")
+      const template = {
+        $schema:
+          "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+        google_auth: false,
+        sisyphus_agent: {
+          default_builder_enabled: true,
+          replace_plan: true,
+        },
+        disabled_hooks: ["template-hook"],
+      }
+      await fs.writeFile(templatePath, JSON.stringify(template, null, 2))
+
+      const config = ConfigSchema.parse({
+        agents: { oracle: { model: "gpt-5" } },
+        categories: {},
+        sisyphus_agent: {
+          replace_plan: false,
+        },
+        disabled_hooks: ["comment-checker"],
+      })
+
+      await saveProfile(tempDir, "templated", config, { templatePath })
+
+      const profilePath = path.join(tempDir, "oh-my-opencode-templated.json")
+      const content = await fs.readFile(profilePath, "utf-8")
+      const parsed = JSON.parse(content)
+
+      expect(parsed.$schema).toBe(template.$schema)
+      expect(parsed.google_auth).toBe(false)
+      expect(parsed.sisyphus_agent.default_builder_enabled).toBe(true)
+      expect(parsed.sisyphus_agent.replace_plan).toBe(false)
+      expect(parsed.disabled_hooks).toEqual(["comment-checker"])
+      expect(parsed.agents.oracle.model).toBe("gpt-5")
+    })
+
+    test("falls back to default template path when explicit template is missing", async () => {
+      const configPath = path.join(tempDir, "oh-my-opencode.json")
+      const fallbackTemplatePath = path.join(tempDir, "oh-my-opencode.template.json")
+      await fs.writeFile(fallbackTemplatePath, JSON.stringify({ google_auth: false }, null, 2))
+
+      const config = ConfigSchema.parse({ agents: {}, categories: {} })
+      await saveProfile(tempDir, "fallback", config, {
+        configPath,
+        templatePath: path.join(tempDir, "does-not-exist.json"),
+      })
+
+      const profilePath = path.join(tempDir, "oh-my-opencode-fallback.json")
+      const parsed = JSON.parse(await fs.readFile(profilePath, "utf-8"))
+
+      expect(parsed.google_auth).toBe(false)
     })
   })
 

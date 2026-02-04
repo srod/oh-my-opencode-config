@@ -27,6 +27,7 @@ const {
   profileListCommand,
   profileDeleteCommand,
   profileRenameCommand,
+  profileTemplateCommand,
 } = await import("./profile.js")
 
 const originalConsoleLog = console.log
@@ -161,6 +162,74 @@ describe("profile commands", () => {
       const parsed: Config = JSON.parse(content)
 
       expect(parsed).toEqual(config)
+    })
+  })
+
+  describe("profileTemplateCommand", () => {
+    test("writes template next to the active config", async () => {
+      const config = ConfigSchema.parse({
+        agents: { oracle: { model: "gpt-5" } },
+        categories: {},
+        google_auth: false,
+      })
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      const options = { config: configPath, verbose: false }
+      await profileTemplateCommand(options)
+
+      const templatePath = path.join(configDir, "oh-my-opencode.template.json")
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
+
+      expect(parsed.google_auth).toBe(false)
+      expect(parsed.agents.oracle.model).toBe("gpt-5")
+    })
+
+    test("respects dry-run without writing template", async () => {
+      const options = { config: configPath, verbose: false, dryRun: true }
+      await profileTemplateCommand(options)
+
+      const templatePath = path.join(configDir, "oh-my-opencode.template.json")
+      const exists = await fs
+        .access(templatePath)
+        .then(() => true)
+        .catch(() => false)
+
+      expect(exists).toBe(false)
+      expect(mockOutro).toHaveBeenCalledWith(expect.stringContaining("Dry run"))
+    })
+
+    test("prompts before overwriting and respects cancellation", async () => {
+      const templatePath = path.join(configDir, "oh-my-opencode.template.json")
+      await fs.writeFile(templatePath, JSON.stringify({ google_auth: true }, null, 2))
+
+      mockConfirm.mockResolvedValueOnce(false)
+
+      const options = { config: configPath, verbose: false }
+      await profileTemplateCommand(options)
+
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
+      expect(parsed.google_auth).toBe(true)
+      expect(mockCancel).toHaveBeenCalled()
+    })
+
+    test("overwrites template when confirmed", async () => {
+      const templatePath = path.join(configDir, "oh-my-opencode.template.json")
+      await fs.writeFile(templatePath, JSON.stringify({ google_auth: true }, null, 2))
+
+      const config = ConfigSchema.parse({
+        agents: {},
+        categories: {},
+        google_auth: false,
+      })
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      mockConfirm.mockResolvedValueOnce(true)
+
+      const options = { config: configPath, verbose: false }
+      await profileTemplateCommand(options)
+
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
+      expect(parsed.google_auth).toBe(false)
     })
   })
 

@@ -14,7 +14,13 @@ import {
   menuReset,
   showHelpCommand,
 } from "./misc.js"
-import { menuProfileDelete, menuProfileList, menuProfileSave, menuProfileUse } from "./profile.js"
+import {
+  menuProfileDelete,
+  menuProfileList,
+  menuProfileSave,
+  menuProfileTemplate,
+  menuProfileUse,
+} from "./profile.js"
 import { menuDoctor, menuStatus } from "./status.js"
 
 type MenuOption<T extends string> = {
@@ -47,6 +53,7 @@ type MenuAction =
   | "import"
   | "refresh"
   | "profile-save"
+  | "profile-template"
   | "profile-use"
   | "profile-list"
   | "profile-delete"
@@ -109,6 +116,14 @@ async function runSubmenu(
   }
 }
 
+/**
+ * Launches the interactive main menu for configuration and dispatches selected subcommands.
+ *
+ * Presents categorized menu options (overview, configure, profiles, history & safety, I/O, cache, help, exit),
+ * invokes the appropriate submenu or command for each selection, and continues until the user exits or cancels.
+ *
+ * @param options - Selected fields from BaseCommandOptions used by menu actions (`config`, `opencodeConfig`, and `refresh`)
+ */
 export async function mainMenuCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh">,
 ) {
@@ -153,6 +168,9 @@ export async function mainMenuCommand(
     },
     "profile-save": async () => {
       await menuProfileSave(options)
+    },
+    "profile-template": async () => {
+      await menuProfileTemplate(options)
     },
     "profile-use": async () => {
       await menuProfileUse(options)
@@ -205,6 +223,11 @@ export async function mainMenuCommand(
 
   const profileOptions: ReadonlyArray<MenuOption<MenuAction>> = [
     { value: "profile-save", label: "💾 Save Profile", hint: "Save current config as profile" },
+    {
+      value: "profile-template",
+      label: "🧩 Create Template",
+      hint: "Write oh-my-opencode.template.json",
+    },
     { value: "profile-use", label: "📂 Load Profile", hint: "Switch to a saved profile" },
     { value: "profile-list", label: "📋 List Profiles", hint: "Show all saved profiles" },
     { value: "profile-delete", label: "🗑️ Delete Profile", hint: "Remove a saved profile" },
@@ -353,6 +376,7 @@ export {
   menuProfileDelete,
   menuProfileList,
   menuProfileSave,
+  menuProfileTemplate,
   menuProfileUse,
 } from "./profile.js"
 export { menuDoctor, menuStatus } from "./status.js"

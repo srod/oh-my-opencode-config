@@ -5,7 +5,11 @@ import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { handleError } from "#errors/handlers.js"
-import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "#profile/constants.js"
+import {
+  PROFILE_NAME_MAX_LENGTH,
+  PROFILE_NAME_REGEX,
+  PROFILE_TEMPLATE_FILE_NAME,
+} from "#profile/constants.js"
 import {
   deleteProfile,
   listProfiles,
@@ -15,12 +19,25 @@ import {
   saveProfile,
   useProfile,
 } from "#profile/manager.js"
+import { atomicWrite, fileExists } from "#utils/fs.js"
 import { printBlank, printLine } from "#utils/output.js"
 
+/**
+ * Get the directory portion of a configuration file path.
+ *
+ * @param configPath - The full path to the configuration file
+ * @returns The directory portion of `configPath`
+ */
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)
 }
 
+/**
+ * Validates a candidate profile name.
+ *
+ * @param value - The profile name to validate (may be undefined)
+ * @returns `undefined` if the name is valid; otherwise an error message string or an `Error` describing why the name is invalid (missing, too long, or containing disallowed characters)
+ */
 function validateProfileNameInput(value: string | undefined): string | Error | undefined {
   if (!value || value.length === 0) {
     return "Profile name is required"
@@ -34,8 +51,14 @@ function validateProfileNameInput(value: string | undefined): string | Error | u
   return undefined
 }
 
+/**
+ * Saves the current configuration as a named profile, prompting the user for a name if none is provided.
+ *
+ * @param options - Command options. `options.template` may be a path to associate a template file with the saved profile.
+ * @param name - Optional profile name; if omitted the user will be prompted to enter one.
+ */
 export async function profileSaveCommand(
-  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "template">,
   name?: string,
 ): Promise<void> {
   try {
@@ -57,7 +80,10 @@ export async function profileSaveCommand(
       name = inputName
     }
 
-    await saveProfile(configDir, name, config)
+    await saveProfile(configDir, name, config, {
+      configPath,
+      templatePath: options.template,
+    })
     outro(chalk.green(`Profile "${name}" saved successfully.`))
   } catch (error) {
     if (error instanceof ProfileError) {
@@ -68,6 +94,60 @@ export async function profileSaveCommand(
   }
 }
 
+/**
+ * Save the current configuration as a template file inside the configuration directory.
+ *
+ * If a template already exists, prompts for confirmation before overwriting. When `options.dryRun`
+ * is true, reports whether it would create or overwrite the template without writing any files.
+ *
+ * @param options - Options containing the resolved config path (`config`), a verbose flag (`verbose`),
+ *   and a `dryRun` flag that causes the command to only report intended actions
+ */
+export async function profileTemplateCommand(
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+): Promise<void> {
+  try {
+    const configPath = resolveConfigPath(options.config)
+    const configDir = getConfigDir(configPath)
+    const templatePath = path.join(configDir, PROFILE_TEMPLATE_FILE_NAME)
+    const config = await loadConfig(configPath)
+
+    const exists = await fileExists(templatePath)
+    if (options.dryRun) {
+      const action = exists ? "overwrite" : "create"
+      outro(chalk.yellow(`Dry run: Would ${action} template at ${templatePath}.`))
+      return
+    }
+
+    if (exists) {
+      const overwrite = await confirm({
+        message: `Template already exists at ${templatePath}. Overwrite?`,
+        initialValue: false,
+      })
+
+      if (isCancel(overwrite) || !overwrite) {
+        cancel("Operation cancelled.")
+        return
+      }
+    }
+
+    await atomicWrite(templatePath, JSON.stringify(config, null, 2))
+    outro(chalk.green(`Template saved to ${templatePath}.`))
+  } catch (error) {
+    handleError(error, { verbose: options.verbose })
+  }
+}
+
+/**
+ * Activate a saved profile by name or prompt the user to choose one.
+ *
+ * If `name` is provided, that profile is activated; otherwise the user is prompted
+ * to select from existing profiles. If no profiles exist the command prints a
+ * warning and exits. On success a confirmation message is displayed. If the
+ * selected profile cannot be found the operation is cancelled with an error message.
+ *
+ * @param name - Optional profile name to activate; if omitted the user will be prompted
+ */
 export async function profileUseCommand(
   options: Pick<BaseCommandOptions, "config" | "verbose">,
   name?: string,

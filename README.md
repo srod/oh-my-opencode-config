@@ -39,7 +39,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 | `doctor` | Diagnose issues (`--fix` repairs cache) |
 | `backup list` | List backups |
 | `backup restore <timestamp>` | Restore a backup |
-| `profile save/use/list/delete/rename` | Manage profiles |
+| `profile save/use/list/delete/rename/template` | Manage profiles |
 | `import [path]` | Import config JSON |
 | `export [path]` | Export config JSON |
 | `refresh` | Refresh models cache |
@@ -55,6 +55,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 - `--json` Output as JSON (where supported).
 - `--verbose` Include detailed logs and stack traces.
 - `--dry-run` Preview changes without writing.
+- `--template <path>` Override the profile template path used by `profile save`.
 
 ## Configuration files
 
@@ -74,6 +75,27 @@ Models cache: `~/.cache/opencode/models.json`
   "agents": {
     "oracle": { "model": "google/antigravity-gemini-3-pro", "variant": "high" }
   }
+}
+```
+
+### `oh-my-opencode.template.json`
+
+Used as a base when saving profiles. Create it with `profile template` or provide one via `--template <path>`.
+
+Example template:
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "google_auth": false,
+  "sisyphus_agent": {
+    "default_builder_enabled": true,
+    "replace_plan": true
+  },
+  "git_master": {
+    "commit_footer": false,
+    "include_co_authored_by": false
+  },
+  "disabled_hooks": ["comment-checker"]
 }
 ```
 
