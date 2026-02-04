@@ -52,6 +52,10 @@ interface DiagnosticReport {
   issues: Issue[]
   stats: { errors: number; warnings: number; info: number }
   versions: { opencode: string | null; ohMyOpencode: string | null }
+  updates: {
+    opencode: { latest: string | null; updateAvailable: boolean | null }
+    ohMyOpencode: { latest: string | null; updateAvailable: boolean | null }
+  }
   summary: {
     agentsConfigured: number
     agentsTotal: number
@@ -283,6 +287,7 @@ describe("doctorCommand", () => {
       expect(report).toHaveProperty("issues")
       expect(report).toHaveProperty("stats")
       expect(report).toHaveProperty("versions")
+      expect(report).toHaveProperty("updates")
       expect(report).toHaveProperty("summary")
       expect(report).toHaveProperty("assignments")
       expect(report).toHaveProperty("cache")
