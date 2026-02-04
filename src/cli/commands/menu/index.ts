@@ -116,6 +116,14 @@ async function runSubmenu(
   }
 }
 
+/**
+ * Launches the interactive main menu for configuration and dispatches selected subcommands.
+ *
+ * Presents categorized menu options (overview, configure, profiles, history & safety, I/O, cache, help, exit),
+ * invokes the appropriate submenu or command for each selection, and continues until the user exits or cancels.
+ *
+ * @param options - Selected fields from BaseCommandOptions used by menu actions (`config`, `opencodeConfig`, and `refresh`)
+ */
 export async function mainMenuCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh">,
 ) {

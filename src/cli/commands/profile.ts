@@ -22,10 +22,22 @@ import {
 import { atomicWrite, fileExists } from "#utils/fs.js"
 import { printBlank, printLine } from "#utils/output.js"
 
+/**
+ * Get the directory portion of a configuration file path.
+ *
+ * @param configPath - The full path to the configuration file
+ * @returns The directory portion of `configPath`
+ */
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)
 }
 
+/**
+ * Validates a candidate profile name.
+ *
+ * @param value - The profile name to validate (may be undefined)
+ * @returns `undefined` if the name is valid; otherwise an error message string or an `Error` describing why the name is invalid (missing, too long, or containing disallowed characters)
+ */
 function validateProfileNameInput(value: string | undefined): string | Error | undefined {
   if (!value || value.length === 0) {
     return "Profile name is required"
@@ -39,6 +51,12 @@ function validateProfileNameInput(value: string | undefined): string | Error | u
   return undefined
 }
 
+/**
+ * Saves the current configuration as a named profile, prompting the user for a name if none is provided.
+ *
+ * @param options - Command options. `options.template` may be a path to associate a template file with the saved profile.
+ * @param name - Optional profile name; if omitted the user will be prompted to enter one.
+ */
 export async function profileSaveCommand(
   options: Pick<BaseCommandOptions, "config" | "verbose" | "template">,
   name?: string,
@@ -76,6 +94,15 @@ export async function profileSaveCommand(
   }
 }
 
+/**
+ * Save the current configuration as a template file inside the configuration directory.
+ *
+ * If a template already exists, prompts for confirmation before overwriting. When `options.dryRun`
+ * is true, reports whether it would create or overwrite the template without writing any files.
+ *
+ * @param options - Options containing the resolved config path (`config`), a verbose flag (`verbose`),
+ *   and a `dryRun` flag that causes the command to only report intended actions
+ */
 export async function profileTemplateCommand(
   options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
 ): Promise<void> {
@@ -111,6 +138,16 @@ export async function profileTemplateCommand(
   }
 }
 
+/**
+ * Activate a saved profile by name or prompt the user to choose one.
+ *
+ * If `name` is provided, that profile is activated; otherwise the user is prompted
+ * to select from existing profiles. If no profiles exist the command prints a
+ * warning and exits. On success a confirmation message is displayed. If the
+ * selected profile cannot be found the operation is cancelled with an error message.
+ *
+ * @param name - Optional profile name to activate; if omitted the user will be prompted
+ */
 export async function profileUseCommand(
   options: Pick<BaseCommandOptions, "config" | "verbose">,
   name?: string,
