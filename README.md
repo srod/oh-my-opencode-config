@@ -98,6 +98,7 @@ Diagnose configuration issues and validate setup. Checks for:
 - Invalid model assignments
 - Capability mismatches
 - Defunct agent configurations
+- NPM update availability for `opencode` and `oh-my-opencode`
 
 Use `--fix` to automatically resolve cache issues when possible.
 
