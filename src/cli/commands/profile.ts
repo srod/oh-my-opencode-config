@@ -77,7 +77,7 @@ export async function profileSaveCommand(
 }
 
 export async function profileTemplateCommand(
-  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
 ): Promise<void> {
   try {
     const configPath = resolveConfigPath(options.config)
@@ -86,6 +86,12 @@ export async function profileTemplateCommand(
     const config = await loadConfig(configPath)
 
     const exists = await fileExists(templatePath)
+    if (options.dryRun) {
+      const action = exists ? "overwrite" : "create"
+      outro(chalk.yellow(`Dry run: Would ${action} template at ${templatePath}.`))
+      return
+    }
+
     if (exists) {
       const overwrite = await confirm({
         message: `Template already exists at ${templatePath}. Overwrite?`,

@@ -28,7 +28,7 @@ export const program = new Command()
 program
   .name("oh-my-opencode-config")
   .description("Interactive CLI for managing model assignments in oh-my-opencode.json")
-  .version("0.1.0")
+  .version("0.2.0")
 
 program
   .option("--config <path>", "Override oh-my-opencode.json path")

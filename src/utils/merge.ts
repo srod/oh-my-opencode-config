@@ -17,8 +17,12 @@ export function deepMerge(base: unknown, override: unknown): unknown {
   if (isPlainObject(base) && isPlainObject(override)) {
     const result: Record<string, unknown> = {}
     const keys = new Set([...Object.keys(base), ...Object.keys(override)])
+    const blockedKeys = new Set(["__proto__", "constructor", "prototype"])
 
     for (const key of keys) {
+      if (blockedKeys.has(key)) {
+        continue
+      }
       if (hasOwnKey(override, key)) {
         const overrideValue = override[key]
         const baseValue = base[key]

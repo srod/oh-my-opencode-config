@@ -184,6 +184,20 @@ describe("profile commands", () => {
       expect(parsed.agents.oracle.model).toBe("gpt-5")
     })
 
+    test("respects dry-run without writing template", async () => {
+      const options = { config: configPath, verbose: false, dryRun: true }
+      await profileTemplateCommand(options)
+
+      const templatePath = path.join(configDir, "oh-my-opencode.template.json")
+      const exists = await fs
+        .access(templatePath)
+        .then(() => true)
+        .catch(() => false)
+
+      expect(exists).toBe(false)
+      expect(mockOutro).toHaveBeenCalledWith(expect.stringContaining("Dry run"))
+    })
+
     test("prompts before overwriting and respects cancellation", async () => {
       const templatePath = path.join(configDir, "oh-my-opencode.template.json")
       await fs.writeFile(templatePath, JSON.stringify({ google_auth: true }, null, 2))

@@ -368,6 +368,7 @@ export {
   menuProfileDelete,
   menuProfileList,
   menuProfileSave,
+  menuProfileTemplate,
   menuProfileUse,
 } from "./profile.js"
 export { menuDoctor, menuStatus } from "./status.js"
