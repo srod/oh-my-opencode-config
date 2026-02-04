@@ -1,6 +1,7 @@
 import path from "node:path"
 import { isCancel, select, text } from "@clack/prompts"
 import chalk from "chalk"
+import { profileTemplateCommand } from "#cli/commands/profile.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
@@ -15,7 +16,7 @@ import {
 import { printBlank, printLine } from "#utils/output.js"
 
 export async function menuProfileSave(
-  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
 ): Promise<void> {
   const configPath = resolveConfigPath(options.config)
   const configDir = pathDirname(configPath)
@@ -32,7 +33,10 @@ export async function menuProfileSave(
   }
 
   try {
-    await saveProfileFn(configDir, inputName, config)
+    await saveProfileFn(configDir, inputName, config, {
+      configPath,
+      templatePath: options.template,
+    })
     printLine(chalk.green(`Profile "${inputName}" saved successfully.`))
   } catch (error) {
     if (error instanceof ProfileError) {
@@ -152,6 +156,12 @@ export async function menuProfileDelete(
       throw error
     }
   }
+}
+
+export async function menuProfileTemplate(
+  options: Pick<BaseCommandOptions, "config" | "verbose">,
+): Promise<void> {
+  await profileTemplateCommand(options)
 }
 
 function pathDirname(configPath: string): string {

@@ -3,10 +3,12 @@ import path from "node:path"
 import { InvalidConfigError, PermissionDeniedError } from "#errors/types.js"
 import { type Config, ConfigSchema } from "#types/config.js"
 import { atomicWrite, fileExists, isErrnoException } from "#utils/fs.js"
+import { deepMerge } from "#utils/merge.js"
 import {
   CONFIG_FILE_NAME,
   PROFILE_NAME_MAX_LENGTH,
   PROFILE_NAME_REGEX,
+  PROFILE_TEMPLATE_FILE_NAME,
   RESERVED_PROFILE_NAMES,
 } from "./constants.js"
 
@@ -58,6 +60,11 @@ export class DanglingSymlinkError extends ProfileError {
     )
     this.name = "DanglingSymlinkError"
   }
+}
+
+export interface SaveProfileOptions {
+  configPath?: string
+  templatePath?: string
 }
 
 /**
@@ -195,19 +202,78 @@ async function atomicSymlinkUpdate(targetPath: string, linkPath: string): Promis
 }
 
 /**
- * Read the current config file content as string.
- * Returns null if file doesn't exist.
+ * Read and parse a JSON file.
  */
-async function readConfigContent(configPath: string): Promise<string | null> {
+async function readJsonFile(filePath: string): Promise<unknown> {
   try {
-    const file = Bun.file(configPath)
-    if (!(await file.exists())) {
-      return null
+    const content = await Bun.file(filePath).text()
+    return JSON.parse(content)
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new InvalidConfigError(`Malformed JSON in ${filePath}: ${error.message}`)
     }
-    return await file.text()
-  } catch {
+    if (isErrnoException(error) && (error.code === "EACCES" || error.code === "EPERM")) {
+      throw new PermissionDeniedError(filePath, "read")
+    }
+    throw error
+  }
+}
+
+async function loadConfigFromFile(filePath: string): Promise<Config | null> {
+  const exists = await fileExists(filePath)
+  if (!exists) {
     return null
   }
+  const json = await readJsonFile(filePath)
+  const result = ConfigSchema.safeParse(json)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")
+    throw new InvalidConfigError(`${filePath}: ${issues}`)
+  }
+  return result.data
+}
+
+async function resolveTemplatePath(
+  configDir: string,
+  options?: SaveProfileOptions,
+): Promise<string | null> {
+  const explicitPath = options?.templatePath
+  if (explicitPath) {
+    const explicitExists = await fileExists(explicitPath)
+    if (explicitExists) {
+      return explicitPath
+    }
+  }
+
+  const configPath = options?.configPath ?? getConfigPath(configDir)
+  const fallbackPath = path.join(path.dirname(configPath), PROFILE_TEMPLATE_FILE_NAME)
+  const fallbackExists = await fileExists(fallbackPath)
+  if (fallbackExists) {
+    return fallbackPath
+  }
+
+  return null
+}
+
+async function loadTemplateConfig(
+  configDir: string,
+  options?: SaveProfileOptions,
+): Promise<Config | null> {
+  const templatePath = await resolveTemplatePath(configDir, options)
+  if (!templatePath) {
+    return null
+  }
+  return await loadConfigFromFile(templatePath)
+}
+
+function applyTemplate(template: Config, config: Config): Config {
+  const merged = deepMerge(template, config)
+  const result = ConfigSchema.safeParse(merged)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")
+    throw new InvalidConfigError(`Template merge failed: ${issues}`)
+  }
+  return result.data
 }
 
 /**
@@ -217,7 +283,12 @@ async function readConfigContent(configPath: string): Promise<string | null> {
  * @throws InvalidConfigError if config fails Zod validation
  * @throws ProfileExistsError if profile already exists (optional, for overwrite protection)
  */
-export async function saveProfile(configDir: string, name: string, config: Config): Promise<void> {
+export async function saveProfile(
+  configDir: string,
+  name: string,
+  config: Config,
+  options?: SaveProfileOptions,
+): Promise<void> {
   validateProfileName(name)
 
   // Validate config with Zod before saving
@@ -225,26 +296,32 @@ export async function saveProfile(configDir: string, name: string, config: Confi
   if (!validationResult.success) {
     throw new InvalidConfigError(`Config validation failed: ${validationResult.error.message}`)
   }
+  const validatedConfig = validationResult.data
+
+  const templateConfig = await loadTemplateConfig(configDir, options)
+  const outputConfig = templateConfig
+    ? applyTemplate(templateConfig, validatedConfig)
+    : validatedConfig
 
   // Check if this is the first profile save (auto-create default)
   const existingProfiles = await findProfileNames(configDir)
   if (existingProfiles.length === 0 && name !== "default") {
     // Auto-create default profile from current config
     const defaultProfilePath = getProfilePath(configDir, "default")
-    const configPath = getConfigPath(configDir)
-    const currentContent = await readConfigContent(configPath)
+    const configPath = options?.configPath ?? getConfigPath(configDir)
+    const currentConfig = await loadConfigFromFile(configPath)
+    const defaultConfig = currentConfig
+      ? templateConfig
+        ? applyTemplate(templateConfig, currentConfig)
+        : currentConfig
+      : outputConfig
 
-    if (currentContent) {
-      await atomicWrite(defaultProfilePath, currentContent)
-    } else {
-      // No current config, save the provided config as default too
-      await atomicWrite(defaultProfilePath, JSON.stringify(config, null, 2))
-    }
+    await atomicWrite(defaultProfilePath, JSON.stringify(defaultConfig, null, 2))
   }
 
   // Save the requested profile
   const profilePath = getProfilePath(configDir, name)
-  const content = JSON.stringify(config, null, 2)
+  const content = JSON.stringify(outputConfig, null, 2)
   await atomicWrite(profilePath, content)
 }
 

@@ -19,3 +19,6 @@ export const RESERVED_PROFILE_NAMES = new Set([
 
 // Config file name constant
 export const CONFIG_FILE_NAME = "oh-my-opencode.json"
+
+// Template file name for profile defaults
+export const PROFILE_TEMPLATE_FILE_NAME = "oh-my-opencode.template.json"

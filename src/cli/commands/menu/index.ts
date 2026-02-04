@@ -14,7 +14,13 @@ import {
   menuReset,
   showHelpCommand,
 } from "./misc.js"
-import { menuProfileDelete, menuProfileList, menuProfileSave, menuProfileUse } from "./profile.js"
+import {
+  menuProfileDelete,
+  menuProfileList,
+  menuProfileSave,
+  menuProfileTemplate,
+  menuProfileUse,
+} from "./profile.js"
 import { menuDoctor, menuStatus } from "./status.js"
 
 type MenuOption<T extends string> = {
@@ -47,6 +53,7 @@ type MenuAction =
   | "import"
   | "refresh"
   | "profile-save"
+  | "profile-template"
   | "profile-use"
   | "profile-list"
   | "profile-delete"
@@ -154,6 +161,9 @@ export async function mainMenuCommand(
     "profile-save": async () => {
       await menuProfileSave(options)
     },
+    "profile-template": async () => {
+      await menuProfileTemplate(options)
+    },
     "profile-use": async () => {
       await menuProfileUse(options)
     },
@@ -205,6 +215,11 @@ export async function mainMenuCommand(
 
   const profileOptions: ReadonlyArray<MenuOption<MenuAction>> = [
     { value: "profile-save", label: "💾 Save Profile", hint: "Save current config as profile" },
+    {
+      value: "profile-template",
+      label: "🧩 Create Template",
+      hint: "Write oh-my-opencode.template.json",
+    },
     { value: "profile-use", label: "📂 Load Profile", hint: "Switch to a saved profile" },
     { value: "profile-list", label: "📋 List Profiles", hint: "Show all saved profiles" },
     { value: "profile-delete", label: "🗑️ Delete Profile", hint: "Remove a saved profile" },
