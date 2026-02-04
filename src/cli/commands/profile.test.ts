@@ -178,7 +178,7 @@ describe("profile commands", () => {
       await profileTemplateCommand(options)
 
       const templatePath = path.join(configDir, "oh-my-opencode.template.json")
-      const parsed = JSON.parse(await fs.readFile(templatePath, "utf-8"))
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
 
       expect(parsed.google_auth).toBe(false)
       expect(parsed.agents.oracle.model).toBe("gpt-5")
@@ -207,7 +207,7 @@ describe("profile commands", () => {
       const options = { config: configPath, verbose: false }
       await profileTemplateCommand(options)
 
-      const parsed = JSON.parse(await fs.readFile(templatePath, "utf-8"))
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
       expect(parsed.google_auth).toBe(true)
       expect(mockCancel).toHaveBeenCalled()
     })
@@ -228,7 +228,7 @@ describe("profile commands", () => {
       const options = { config: configPath, verbose: false }
       await profileTemplateCommand(options)
 
-      const parsed = JSON.parse(await fs.readFile(templatePath, "utf-8"))
+      const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
       expect(parsed.google_auth).toBe(false)
     })
   })

@@ -188,7 +188,7 @@ export async function menuProfileDelete(
  * @param options - CLI options containing `config` (path to config) and `verbose` (enable verbose output)
  */
 export async function menuProfileTemplate(
-  options: Pick<BaseCommandOptions, "config" | "verbose">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
 ): Promise<void> {
   await profileTemplateCommand(options)
 }
