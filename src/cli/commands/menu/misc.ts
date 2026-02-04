@@ -111,6 +111,11 @@ export async function menuClearCache(): Promise<void> {
   printLine(chalk.green("Cache cleared successfully!"))
 }
 
+/**
+ * Display the CLI usage and command reference for the tool.
+ *
+ * Prints formatted help text describing commands, subcommands, and global options to the console.
+ */
 export async function showHelpCommand(): Promise<void> {
   printLine("")
   printLine(chalk.bold("oh-my-opencode-config - Interactive CLI for managing model assignments"))
