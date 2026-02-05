@@ -1,19 +1,11 @@
 # Changelog
 
-## 0.2.0
+## [0.2.0] - 2026-02-04
 
 ### Minor Changes
 
-- [#1](https://github.com/srod/oh-my-opencode-config/pull/1) [`20678ef`](https://github.com/srod/oh-my-opencode-config/commit/20678efaad0cda8cf24d9778edc5426f951f6718) Thanks [@srod](https://github.com/srod)! - Initial public release
-
-  - Interactive TUI for agent and category model configuration
-  - Model validation against capability requirements
-  - Configuration discovery (project → user level)
-  - Atomic writes with automatic backups
-  - Profile management (save/load/switch/delete)
-  - Doctor command for config diagnostics
-  - Import/export, undo, history commands
-  - Quick-setup presets (Standard/Economy)
+- Add profile template support with `profile template` and `--template` override.
+- Merge template defaults on profile save and preserve unknown config keys.
 
 All notable changes to this project will be documented in this file.
 

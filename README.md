@@ -1,133 +1,75 @@
 # oh-my-opencode-config
 
-Interactive CLI for managing model assignments in `oh-my-opencode.json`.
+Interactive CLI to manage model assignments in `oh-my-opencode.json` for OpenCode.
 
-Easily configure which models and variants are used by different agents and categories in your OpenCode configuration.
+Use it to pick models and variants per agent and category, validate capabilities, and keep configs safe with backups.
 
-## Features
+## Install
 
-- **Interactive TUI**: User-friendly prompts for agent and category configuration.
-- **Model Validation**: Ensures selected models meet agent capability requirements (reasoning, tool calls, attachments).
-- **Configuration Discovery**: Automatically finds project-level or user-level config files.
-- **Atomic Writes**: Safe configuration updates with temporary files and renames.
-- **Automatic Backups**: Keeps track of configuration changes with restore capabilities.
-- **Diff View**: Preview changes before applying them.
-
-## Installation
-
-This CLI requires [Bun](https://bun.sh/) as its runtime.
+Requires Bun.
 
 ```bash
-# Install Bun first (if not already installed)
 curl -fsSL https://bun.sh/install | bash
-
-# Then install the CLI
-npm install -g oh-my-opencode-config
+bun add -g oh-my-opencode-config
 ```
 
-## Quick Start
+## Quick start
 
-Show current model assignments:
+```bash
+oh-my-opencode-config
+```
 
 ```bash
 oh-my-opencode-config list
 ```
 
+Run `oh-my-opencode-config --help` for the full command list.
+
 ## Commands
 
-### `menu`
-Interactive main menu with all options. Best starting point for beginners - navigate between all features without restarting the CLI.
+| Command | What it does |
+| --- | --- |
+| `menu` | Open the interactive menu |
+| `list` | Show current config |
+| `status` | Check config health |
+| `configure agents` | Assign models to agents |
+| `configure categories` | Assign models to categories |
+| `configure quick-setup` | Apply Standard or Economy presets |
+| `diff` | Show changes from defaults |
+| `doctor` | Diagnose issues (`--fix` repairs cache) |
+| `backup list` | List backups |
+| `backup restore <timestamp>` | Restore a backup |
+| `profile save/use/list/delete/rename/template` | Manage profiles |
+| `import [path]` | Import config JSON |
+| `export [path]` | Export config JSON |
+| `refresh` | Refresh models cache |
+| `clear-cache` | Clear models cache |
+| `undo` | Restore most recent backup |
+| `history` | Show change history |
 
-### `status`
-Shows configuration status with visual indicators:
-- ✓ Green check: Agent properly configured with valid model
-- ⚠ Yellow warning: Agent configured but model missing capabilities
-- ✗ Red X: Agent not configured
-- ? Unknown: Model not found in cache
+## Global flags
 
-### `list`
-Displays the current configuration, showing which models and variants are assigned to agents and categories. Use `--json` for machine-readable output.
+- `--config <path>` Override the `oh-my-opencode.json` path.
+- `--opencode-config <path>` Override the `opencode.json` path for custom models.
+- `--refresh` Force refresh of the models cache.
+- `--json` Output as JSON (where supported).
+- `--verbose` Include detailed logs and stack traces.
+- `--dry-run` Preview changes without writing.
+- `--template <path>` Override the profile template path used by `profile save`.
 
-### `configure agents`
-Interactive wizard to assign models to specific agents (e.g., oracle, librarian, sisyphus). It filters models based on the agent's requirements.
+## Configuration files
 
-### `configure categories`
-Interactive wizard to assign models to task categories (e.g., frontend-ui-ux, react-dev).
+This tool writes `oh-my-opencode.json` and reads `opencode.json` for custom models.
 
-### `configure quick-setup`
-Apply preset configurations to rapidly switch between profiles:
-- **Standard (Recommended)**: Default high-performance models (e.g., GPT-5.2, Claude Opus 4.5)
-- **Economy**: Cost-effective models (e.g., GPT-4o Mini, Gemini Flash, Claude Haiku)
+Discovery order:
+1. `--config`
+2. `./.opencode/oh-my-opencode.json` (current directory)
+3. `~/.config/opencode/oh-my-opencode.json`
 
-### `reset`
-Resets the configuration to default values. Requires confirmation.
+Models cache: `~/.cache/opencode/models.json`
 
-### `backup list`
-Lists all available configuration backups with their timestamps.
+### `oh-my-opencode.json`
 
-### `backup restore <timestamp>`
-Restores the configuration from a specific backup.
-
-### `profile save [name]`
-Save current configuration as a named profile. If no name is provided, prompts interactively.
-
-### `profile use [name]`
-Switch to a previously saved profile. If no name is provided, shows an interactive selection.
-
-### `profile list`
-List all available saved profiles.
-
-### `profile delete [name]`
-Delete a saved profile. If no name is provided, prompts interactively.
-
-### `profile rename [old] [new]`
-Rename an existing profile.
-
-### `diff`
-Shows the difference between your current configuration and the default settings with color coding and summary statistics.
-
-### `refresh`
-Manually refresh the available models cache from `opencode models`.
-
-### `clear-cache`
-Clear the available models cache to force a fresh fetch on next run.
-
-### `doctor`
-Diagnose configuration issues and validate setup. Checks for:
-- Missing or corrupted cache
-- Invalid model assignments
-- Capability mismatches
-- Defunct agent configurations
-
-Use `--fix` to automatically resolve cache issues when possible.
-
-### `import [path]`
-Import configuration from a JSON file. If no path is provided, prompts for file selection.
-
-### `export [path]`
-Export current configuration to a JSON file. If no path is provided, prompts for destination.
-
-### `undo`
-Undo the last configuration change by restoring the most recent backup.
-
-### `history`
-Show configuration change history from backups. Use `--limit <number>` to restrict the number of entries shown.
-
-## Global Flags
-
-- `--config <path>`: Override the default `oh-my-opencode.json` path (not `opencode.json`).
-- `--opencode-config <path>`: Override the `opencode.json` path for loading custom models.
-- `--refresh`: Force refresh of available models cache from `opencode models`.
-- `--json`: Output results in JSON format (where applicable).
-- `--verbose`: Enable detailed logging and stack traces on errors.
-- `--dry-run`: Preview changes without writing to disk.
-
-## Configuration Files
-
-This tool manages **model assignments** in `oh-my-opencode.json`. It also reads model definitions from your main OpenCode config (`opencode.json`) to support custom models from plugins like antigravity.
-
-### `oh-my-opencode.json` (Managed by this tool)
-Contains agent/category to model mappings:
 ```json
 {
   "agents": {
@@ -136,32 +78,53 @@ Contains agent/category to model mappings:
 }
 ```
 
-**Discovery order:**
-1. Path provided via `--config` flag
-2. Project-level: `.opencode/oh-my-opencode.json` (searches up from current directory)
-3. User-level: `~/.config/opencode/oh-my-opencode.json`
+### `oh-my-opencode.template.json`
 
-### `opencode.json` (Main OpenCode config)
-Contains model definitions from plugins. This tool reads from `~/.config/opencode/opencode.json` to discover custom models like antigravity:
+Used as a base when saving profiles. Create it with `profile template` or provide one via `--template <path>`.
+
+Example template:
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "google_auth": false,
+  "sisyphus_agent": {
+    "default_builder_enabled": true,
+    "replace_plan": true
+  },
+  "git_master": {
+    "commit_footer": false,
+    "include_co_authored_by": false
+  },
+  "disabled_hooks": ["comment-checker"]
+}
+```
+
+### `opencode.json`
+
+This is OpenCode’s main config. This CLI does not write it. It reads model definitions here so custom/plugin models show up in the picker. Use `--opencode-config` if your file lives elsewhere.
+
+Minimal example:
+
 ```json
 {
   "plugin": ["opencode-antigravity-auth@latest"],
   "provider": {
     "google": {
       "models": {
-        "antigravity-gemini-3-pro": { "name": "...", "variants": {...} }
+        "antigravity-gemini-3-pro": {
+          "name": "Antigravity Gemini 3 Pro",
+          "variants": { "high": {}, "low": {} }
+        }
       }
     }
   }
 }
 ```
 
-## Agent Requirements
+## Agent requirements
 
-The following requirements are enforced during model selection:
-
-| Agent | Required Capabilities |
-|-------|-----------------------|
+| Agent | Required capabilities |
+| --- | --- |
 | oracle | reasoning, tool_call |
 | librarian | tool_call |
 | explore | tool_call |
@@ -175,97 +138,50 @@ The following requirements are enforced during model selection:
 
 ## Troubleshooting
 
-### Custom Models Not Showing (e.g., Antigravity Plugin)
-If models from plugins like `opencode-antigravity-auth` don't appear:
+### Custom models not showing
 
-1. **Verify models are registered with opencode:**
+1. Check that `opencode` sees the model:
    ```bash
    opencode models | grep antigravity
    ```
-   If models appear here, this tool will find them in `~/.config/opencode/opencode.json`.
-
-2. **Ensure plugin is configured in `opencode.json`:**
-   ```json
-   {
-     "plugin": ["opencode-antigravity-auth@latest"],
-     "provider": {
-       "google": {
-         "models": {
-           "antigravity-gemini-3-pro": { ... }
-         }
-       }
-     }
-   }
-   ```
-
-3. **Refresh the models cache:**
+2. Confirm the plugin and model are in `opencode.json`.
+3. Refresh the cache:
    ```bash
    opencode models --refresh
    ```
 
-### Cache Not Found
-If the models cache is missing, the CLI will offer to refresh it using `opencode models --refresh`.
+### Cache missing
 
-### Permission Denied
-Ensure you have write access to the configuration directory. You may need to run with `sudo` if modifying global configurations.
+Run `oh-my-opencode-config refresh`, or let `doctor` offer a refresh.
 
-### Concurrent Modification
-If another process modifies the configuration while you are using the CLI, it will detect the conflict and abort to prevent data loss.
+### Permission denied
 
-## Source of Defaults
+Ensure you can write to the config directory.
 
-The default model assignments in this tool are synchronized with the [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) repository.
+### Concurrent modification
 
-**Source of Truth:**
-- [`src/shared/model-requirements.ts`](https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts) — Defines fallback chains for both agents (`sisyphus`, `oracle`, etc.) and categories (`visual-engineering`, `ultrabrain`, etc.)
+If another process writes the config, the CLI aborts to avoid data loss.
 
-If the defaults in this CLI seem outdated, compare them against this file in the upstream repository.
+## Defaults source
+
+Defaults are synced from the upstream `oh-my-opencode` repository. See `src/shared/model-requirements.ts` in that repo for the current fallback chains.
 
 ## Contributing
 
-This project uses a **develop/main branching workflow**:
+We use a `develop` → `main` flow.
 
-- **`develop`** — Active development branch (default)
-- **`main`** — Production releases only
-
-### Workflow
-
-```bash
-# 1. Work on develop
-git checkout develop
-git pull origin develop
-
-# 2. Make changes
-# ... your changes ...
-git commit -m "feat: add feature"
-git push origin develop
-
-# 3. When ready to release, create changeset
-bunx changeset
-git add .changeset && git commit -m "chore: add changeset"
-git push origin develop
-
-# 4. Create PR: develop → main
-gh pr create --base main --head develop --title "Release"
-
-# 5. Merge PR → auto-publishes to npm
-```
-
-**CI/CD:**
-- **develop pushes** → Run tests (`.github/workflows/ci.yml`)
-- **main merges** → Run tests + publish to npm (`.github/workflows/release.yml`)
+1. Work on `develop`.
+2. Create a changeset before release.
+3. Open a PR from `develop` to `main`.
 
 ## Development
 
 ```bash
-# Install dependencies
 bun install
-
-# Run tests
-bun test
-
-# Run in development mode
 bun run dev
+bun run test
+bun run check
+bun run typecheck
 ```
 
 ## License

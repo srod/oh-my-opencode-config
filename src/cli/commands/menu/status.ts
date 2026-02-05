@@ -105,6 +105,6 @@ export async function menuStatus(
 export async function menuDoctor(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig">,
 ): Promise<void> {
-  const report = await buildDoctorReport(options)
+  const report = await buildDoctorReport({ ...options, showProgress: true })
   printTextReport(report, { showIntroOutro: false })
 }

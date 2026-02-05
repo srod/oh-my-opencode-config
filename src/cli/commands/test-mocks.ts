@@ -144,6 +144,16 @@ mock.module("#errors/handlers.js", () => ({
   handleError: mock(() => {}),
 }))
 
+export const mockCheckNpmUpdates = mock(() =>
+  Promise.resolve({
+    opencode: { latest: null, updateAvailable: null, error: null },
+    ohMyOpencode: { latest: null, updateAvailable: null, error: null },
+  }),
+)
+mock.module("#utils/npm.js", () => ({
+  checkNpmUpdates: mockCheckNpmUpdates,
+}))
+
 export const mockStat = mock((_path?: string) =>
   Promise.resolve({ mtime: new Date(1000) } as Record<string, unknown>),
 )

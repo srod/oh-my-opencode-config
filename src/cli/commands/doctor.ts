@@ -13,6 +13,8 @@ import { loadCustomModels, loadModelsCache, mergeModelsCache } from "#models/par
 import { colorizeAgent } from "#types/colors.js"
 import type { Config, Model, ModelsCache } from "#types/index.js"
 import { AGENT_REQUIREMENTS, DYNAMIC_AGENTS } from "#types/requirements.js"
+import type { NpmUpdateReport, NpmUpdateStatus } from "#utils/npm.js"
+import { checkNpmUpdates } from "#utils/npm.js"
 import { printBlank, printLine, printSeparator } from "#utils/output.js"
 import { validateModelForAgent } from "#validation/capabilities.js"
 
@@ -50,6 +52,7 @@ interface DiagnosticReport {
     opencode: string | null
     ohMyOpencode: string | null
   }
+  updates: NpmUpdateReport
   summary: {
     agentsConfigured: number
     agentsTotal: number
@@ -371,6 +374,7 @@ function generateReport(
   configValid: boolean,
   issues: Issue[],
   versions: { opencode: string | null; ohMyOpencode: string | null },
+  updates: NpmUpdateReport,
   summary: {
     agentsConfigured: number
     agentsTotal: number
@@ -388,6 +392,7 @@ function generateReport(
     issues,
     stats: { errors, warnings, info },
     versions,
+    updates,
     summary,
     assignments,
     cache: cacheStatus,
@@ -398,6 +403,29 @@ function generateReport(
       withIssues: 0,
     },
   }
+}
+
+function formatNpmVersionLine(
+  label: string,
+  current: string | null,
+  update: NpmUpdateStatus,
+  notFoundText: string,
+): { symbol: string; line: string } {
+  const hasCurrent = current !== null
+  const latestText = update.latest ? ` (latest ${update.latest})` : " (latest unknown)"
+  const latestWithStatus =
+    update.latest && update.updateAvailable === true
+      ? ` (latest ${update.latest}, update available)`
+      : update.latest && update.updateAvailable === false
+        ? ` (latest ${update.latest}, up to date)`
+        : latestText
+  const labelText = hasCurrent ? current : notFoundText
+  const suffix = hasCurrent ? latestWithStatus : update.latest ? ` (latest ${update.latest})` : ""
+  const needsUpdate = update.updateAvailable === true
+  const updateUnknown = update.updateAvailable === null
+  const symbol = !hasCurrent || needsUpdate || updateUnknown ? chalk.yellow("⚠") : chalk.green("✓")
+
+  return { symbol, line: `${label}: ${labelText}${suffix}` }
 }
 
 export function printTextReport(
@@ -438,10 +466,21 @@ export function printTextReport(
   }
 
   printLine(chalk.dim(`  (${formatPathForDisplay(report.config.path)})`))
-  const opencodeSymbol = report.versions.opencode ? chalk.green("✓") : chalk.yellow("⚠")
-  printLine(`${opencodeSymbol} opencode: ${report.versions.opencode ?? "not found in PATH"}`)
-  const ohMySymbol = report.versions.ohMyOpencode ? chalk.green("✓") : chalk.yellow("⚠")
-  printLine(`${ohMySymbol} oh-my-opencode: ${report.versions.ohMyOpencode ?? "not found"}`)
+  const opencodeLine = formatNpmVersionLine(
+    "opencode (npm: opencode-ai)",
+    report.versions.opencode,
+    report.updates.opencode,
+    "not found in PATH",
+  )
+  printLine(`${opencodeLine.symbol} ${opencodeLine.line}`)
+
+  const ohMyLine = formatNpmVersionLine(
+    "oh-my-opencode",
+    report.versions.ohMyOpencode,
+    report.updates.ohMyOpencode,
+    "not found",
+  )
+  printLine(`${ohMyLine.symbol} ${ohMyLine.line}`)
 
   printBlank()
   printLine(chalk.bold("Configuration summary"))
@@ -524,11 +563,43 @@ export function printTextReport(
 }
 
 export async function buildDoctorReport(
-  options: Pick<BaseCommandOptions, "config" | "opencodeConfig"> & { fix?: boolean },
+  options: Pick<BaseCommandOptions, "config" | "opencodeConfig"> & {
+    fix?: boolean
+    showProgress?: boolean
+  },
 ): Promise<DiagnosticReport> {
   const configPath = resolveConfigPath(options.config)
-  const opencodeVersion = await getOpencodeVersion()
-  const ohMyOpencodeVersion = await getOhMyOpencodeVersion(options.opencodeConfig)
+  const showProgress = options.showProgress ?? true
+  let updates: NpmUpdateReport
+  let opencodeVersion: string | null
+  let ohMyOpencodeVersion: string | null
+
+  if (showProgress) {
+    const s = spinner()
+    s.start("Checking npm versions...")
+    const [nextOpencodeVersion, nextOhMyOpencodeVersion] = await Promise.all([
+      getOpencodeVersion(),
+      getOhMyOpencodeVersion(options.opencodeConfig),
+    ])
+    opencodeVersion = nextOpencodeVersion
+    ohMyOpencodeVersion = nextOhMyOpencodeVersion
+    updates = await checkNpmUpdates({
+      opencode: opencodeVersion,
+      ohMyOpencode: ohMyOpencodeVersion,
+    })
+    s.stop("Checked npm versions")
+  } else {
+    const [nextOpencodeVersion, nextOhMyOpencodeVersion] = await Promise.all([
+      getOpencodeVersion(),
+      getOhMyOpencodeVersion(options.opencodeConfig),
+    ])
+    opencodeVersion = nextOpencodeVersion
+    ohMyOpencodeVersion = nextOhMyOpencodeVersion
+    updates = await checkNpmUpdates({
+      opencode: opencodeVersion,
+      ohMyOpencode: ohMyOpencodeVersion,
+    })
+  }
 
   let cacheStatus = await checkModelCache()
 
@@ -605,11 +676,15 @@ export async function buildDoctorReport(
     agents: collectAssignments(config.agents),
     categories: collectAssignments(config.categories),
   }
+  const agentsTotal = Object.keys(AGENT_REQUIREMENTS).length
+  const agentsConfigured = Object.keys(AGENT_REQUIREMENTS).filter(
+    (name) => config.agents?.[name]?.model,
+  ).length
   const summary = {
-    agentsConfigured: assignments.agents.length,
-    agentsTotal: Object.keys(AGENT_REQUIREMENTS).length,
+    agentsConfigured,
+    agentsTotal,
     categoriesConfigured: assignments.categories.length,
-    overrides: assignments.agents.length + assignments.categories.length,
+    overrides: agentsConfigured + assignments.categories.length,
   }
 
   const report = generateReport(
@@ -621,6 +696,7 @@ export async function buildDoctorReport(
       opencode: opencodeVersion,
       ohMyOpencode: ohMyOpencodeVersion,
     },
+    updates,
     summary,
     assignments,
   )
@@ -631,7 +707,7 @@ export async function buildDoctorReport(
 export async function doctorCommand(
   options: Pick<BaseCommandOptions, "config" | "json" | "opencodeConfig"> & { fix?: boolean },
 ): Promise<void> {
-  const report = await buildDoctorReport(options)
+  const report = await buildDoctorReport({ ...options, showProgress: !options.json })
 
   if (options.json) {
     printLine(JSON.stringify(report, null, 2))

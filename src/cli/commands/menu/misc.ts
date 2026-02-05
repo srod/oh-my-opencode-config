@@ -111,6 +111,11 @@ export async function menuClearCache(): Promise<void> {
   printLine(chalk.green("Cache cleared successfully!"))
 }
 
+/**
+ * Display the CLI usage and command reference for the tool.
+ *
+ * Prints formatted help text describing commands, subcommands, and global options to the console.
+ */
 export async function showHelpCommand(): Promise<void> {
   printLine("")
   printLine(chalk.bold("oh-my-opencode-config - Interactive CLI for managing model assignments"))
@@ -128,6 +133,7 @@ export async function showHelpCommand(): Promise<void> {
   printLine("    quick-setup     Apply preset configurations (Standard, Economy)")
   printLine("  profile           Manage configuration profiles")
   printLine("    save [name]     Save current config as named profile")
+  printLine("    template        Create or update profile template")
   printLine("    use [name]      Switch to named profile")
   printLine("    list            List available profiles")
   printLine("    delete [name]   Delete a profile")
@@ -148,6 +154,7 @@ export async function showHelpCommand(): Promise<void> {
   printLine(chalk.bold("Global Options:"))
   printLine("  --config <path>         Override oh-my-opencode.json path")
   printLine("  --opencode-config <path>  Override opencode.json path")
+  printLine("  --template <path>       Override profile template path")
   printLine("  --refresh               Force refresh of model cache")
   printLine("  --json                  Output as JSON")
   printLine("  --verbose               Detailed logging")

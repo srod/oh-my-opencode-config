@@ -12,8 +12,10 @@ export const CategoryConfigSchema = z.object({
 })
 export type CategoryConfig = z.infer<typeof CategoryConfigSchema>
 
-export const ConfigSchema = z.object({
-  agents: z.record(z.string(), AgentConfigSchema).optional(),
-  categories: z.record(z.string(), CategoryConfigSchema).optional(),
-})
+export const ConfigSchema = z
+  .object({
+    agents: z.record(z.string(), AgentConfigSchema).optional(),
+    categories: z.record(z.string(), CategoryConfigSchema).optional(),
+  })
+  .passthrough()
 export type Config = z.infer<typeof ConfigSchema>

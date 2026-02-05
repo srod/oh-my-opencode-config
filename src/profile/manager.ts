@@ -3,10 +3,12 @@ import path from "node:path"
 import { InvalidConfigError, PermissionDeniedError } from "#errors/types.js"
 import { type Config, ConfigSchema } from "#types/config.js"
 import { atomicWrite, fileExists, isErrnoException } from "#utils/fs.js"
+import { deepMerge } from "#utils/merge.js"
 import {
   CONFIG_FILE_NAME,
   PROFILE_NAME_MAX_LENGTH,
   PROFILE_NAME_REGEX,
+  PROFILE_TEMPLATE_FILE_NAME,
   RESERVED_PROFILE_NAMES,
 } from "./constants.js"
 
@@ -58,6 +60,11 @@ export class DanglingSymlinkError extends ProfileError {
     )
     this.name = "DanglingSymlinkError"
   }
+}
+
+export interface SaveProfileOptions {
+  configPath?: string
+  templatePath?: string
 }
 
 /**
@@ -167,7 +174,16 @@ async function getProfileCreatedDate(configDir: string, name: string): Promise<D
 }
 
 /**
- * Atomic symlink update using temp symlink + rename pattern.
+ * Atomically update the symlink at `linkPath` so it points to `targetPath`.
+ *
+ * Attempts to replace the symlink atomically; if the operation fails it will
+ * try to remove any temporary artefact before propagating an error.
+ *
+ * @param targetPath - Filesystem path the symlink should point to
+ * @param linkPath - Path of the symlink to create or update
+ *
+ * @throws PermissionDeniedError if the process lacks permission to create the symlink (`EACCES` or `EPERM`)
+ * @throws Any error thrown by the underlying filesystem operations if not a mapped permission error
  */
 async function atomicSymlinkUpdate(targetPath: string, linkPath: string): Promise<void> {
   const tmpLinkPath = `${linkPath}.tmp.link`
@@ -195,29 +211,148 @@ async function atomicSymlinkUpdate(targetPath: string, linkPath: string): Promis
 }
 
 /**
- * Read the current config file content as string.
- * Returns null if file doesn't exist.
+ * Read and parse JSON content from a file path.
+ *
+ * @param filePath - Path to the JSON file to read
+ * @returns The parsed JSON value
+ * @throws InvalidConfigError if the file contains malformed JSON
+ * @throws PermissionDeniedError if the file cannot be read due to insufficient permissions
  */
-async function readConfigContent(configPath: string): Promise<string | null> {
+async function readJsonFile(filePath: string): Promise<unknown> {
   try {
-    const file = Bun.file(configPath)
-    if (!(await file.exists())) {
-      return null
+    const content = await Bun.file(filePath).text()
+    return JSON.parse(content)
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new InvalidConfigError(`Malformed JSON in ${filePath}: ${error.message}`)
     }
-    return await file.text()
-  } catch {
-    return null
+    if (isErrnoException(error) && (error.code === "EACCES" || error.code === "EPERM")) {
+      throw new PermissionDeniedError(filePath, "read")
+    }
+    throw error
   }
 }
 
 /**
- * Save the current configuration as a named profile.
- * Auto-creates "default" profile on first save if no profiles exist.
- * @throws ProfileNameError if name is invalid
- * @throws InvalidConfigError if config fails Zod validation
- * @throws ProfileExistsError if profile already exists (optional, for overwrite protection)
+ * Load a Config from a JSON file and validate it against the Config schema.
+ *
+ * @param filePath - Path to the JSON file to read
+ * @returns The parsed `Config` when the file exists and passes schema validation, or `null` if the file is missing or cannot be accessed due to permissions
+ * @throws InvalidConfigError - if the file exists and its contents fail schema validation (includes combined issue messages)
  */
-export async function saveProfile(configDir: string, name: string, config: Config): Promise<void> {
+async function loadConfigFromFile(filePath: string): Promise<Config | null> {
+  let json: unknown
+  try {
+    json = await readJsonFile(filePath)
+  } catch (error) {
+    if (error instanceof PermissionDeniedError) {
+      return null
+    }
+    if (
+      isErrnoException(error) &&
+      (error.code === "ENOENT" || error.code === "EACCES" || error.code === "EPERM")
+    ) {
+      return null
+    }
+    throw error
+  }
+  const result = ConfigSchema.safeParse(json)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")
+    throw new InvalidConfigError(`${filePath}: ${issues}`)
+  }
+  return result.data
+}
+
+/**
+ * Locate a profile template file, preferring an explicit templatePath and falling back to a template next to the main config.
+ *
+ * @param configDir - Directory containing configuration files; used to resolve relative `templatePath` values and to locate the default config when `options.configPath` is not provided.
+ * @param options - Optional overrides:
+ *   - `templatePath`: explicit template file path to prefer; whitespace is trimmed and relative paths are resolved against `configDir`.
+ *   - `configPath`: explicit main config file path used to locate a fallback template in the same directory.
+ * @returns The resolved template file path if a template exists, `null` otherwise.
+ */
+async function resolveTemplatePath(
+  configDir: string,
+  options?: SaveProfileOptions,
+): Promise<string | null> {
+  const explicitPath = options?.templatePath?.trim()
+  if (explicitPath) {
+    const candidate = path.isAbsolute(explicitPath)
+      ? explicitPath
+      : path.resolve(configDir, explicitPath)
+    const explicitExists = await fileExists(candidate)
+    return explicitExists ? candidate : null
+  }
+
+  const configPath = options?.configPath ?? getConfigPath(configDir)
+  const fallbackPath = path.join(path.dirname(configPath), PROFILE_TEMPLATE_FILE_NAME)
+  const fallbackExists = await fileExists(fallbackPath)
+  if (fallbackExists) {
+    return fallbackPath
+  }
+
+  return null
+}
+
+/**
+ * Loads and returns the template configuration if a template file can be resolved.
+ *
+ * Resolves a template path using the provided save options and, if found, reads and parses the template JSON into a `Config`. Returns `null` when no template file is present.
+ *
+ * @param configDir - Path to the configuration directory
+ * @param options - Optional save options that may specify a custom configPath or templatePath
+ * @returns The parsed template `Config`, or `null` if no template was found
+ */
+async function loadTemplateConfig(
+  configDir: string,
+  options?: SaveProfileOptions,
+): Promise<Config | null> {
+  const templatePath = await resolveTemplatePath(configDir, options)
+  if (!templatePath) {
+    return null
+  }
+  return await loadConfigFromFile(templatePath)
+}
+
+/**
+ * Merge a template Config with a profile Config and validate the merged result.
+ *
+ * @param template - Base configuration whose values are applied when `config` lacks those keys
+ * @param config - Profile-specific configuration whose values override the template
+ * @returns The merged `Config` validated against the schema
+ * @throws InvalidConfigError if the merged configuration fails schema validation (error includes validation issues)
+ */
+function applyTemplate(template: Config, config: Config): Config {
+  const merged = deepMerge(template, config)
+  const result = ConfigSchema.safeParse(merged)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")
+    throw new InvalidConfigError(`Template merge failed: ${issues}`)
+  }
+  return result.data
+}
+
+/**
+ * Persist a Config under the given profile name, optionally merging it with a template and
+ * auto-creating a "default" profile on the first save when no profiles exist.
+ *
+ * @param configDir - Path to the configuration directory where profiles and the active symlink live
+ * @param name - Profile name to save (must pass validateProfileName)
+ * @param config - Configuration object to be saved for the profile
+ * @param options - Optional save settings (`configPath` and/or `templatePath`) that override detection
+ *
+ * @throws ProfileNameError if `name` is invalid
+ * @throws InvalidConfigError if `config` (or a merged result with a template) fails schema validation
+ * @throws PermissionDeniedError if writing profile files or updating links is blocked by filesystem permissions
+ */
+export async function saveProfile(
+  configDir: string,
+  name: string,
+  config: Config,
+  options?: SaveProfileOptions,
+): Promise<void> {
   validateProfileName(name)
 
   // Validate config with Zod before saving
@@ -225,26 +360,32 @@ export async function saveProfile(configDir: string, name: string, config: Confi
   if (!validationResult.success) {
     throw new InvalidConfigError(`Config validation failed: ${validationResult.error.message}`)
   }
+  const validatedConfig = validationResult.data
+
+  const templateConfig = await loadTemplateConfig(configDir, options)
+  const outputConfig = templateConfig
+    ? applyTemplate(templateConfig, validatedConfig)
+    : validatedConfig
 
   // Check if this is the first profile save (auto-create default)
   const existingProfiles = await findProfileNames(configDir)
   if (existingProfiles.length === 0 && name !== "default") {
     // Auto-create default profile from current config
     const defaultProfilePath = getProfilePath(configDir, "default")
-    const configPath = getConfigPath(configDir)
-    const currentContent = await readConfigContent(configPath)
+    const configPath = options?.configPath ?? getConfigPath(configDir)
+    const currentConfig = await loadConfigFromFile(configPath)
+    const defaultConfig = currentConfig
+      ? templateConfig
+        ? applyTemplate(templateConfig, currentConfig)
+        : currentConfig
+      : outputConfig
 
-    if (currentContent) {
-      await atomicWrite(defaultProfilePath, currentContent)
-    } else {
-      // No current config, save the provided config as default too
-      await atomicWrite(defaultProfilePath, JSON.stringify(config, null, 2))
-    }
+    await atomicWrite(defaultProfilePath, JSON.stringify(defaultConfig, null, 2))
   }
 
   // Save the requested profile
   const profilePath = getProfilePath(configDir, name)
-  const content = JSON.stringify(config, null, 2)
+  const content = JSON.stringify(outputConfig, null, 2)
   await atomicWrite(profilePath, content)
 }
 

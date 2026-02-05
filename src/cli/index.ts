@@ -14,6 +14,7 @@ import {
   profileListCommand,
   profileRenameCommand,
   profileSaveCommand,
+  profileTemplateCommand,
   profileUseCommand,
 } from "#cli/commands/profile.js"
 import { quickSetupCommand } from "#cli/commands/quick-setup.js"
@@ -27,7 +28,7 @@ export const program = new Command()
 program
   .name("oh-my-opencode-config")
   .description("Interactive CLI for managing model assignments in oh-my-opencode.json")
-  .version("0.1.0")
+  .version("0.2.0")
 
 program
   .option("--config <path>", "Override oh-my-opencode.json path")
@@ -36,6 +37,7 @@ program
   .option("--json", "Output as JSON")
   .option("--verbose", "Detailed logging")
   .option("--dry-run", "Preview without applying")
+  .option("--template <path>", "Override profile template path")
 
 program
   .command("list")
@@ -137,6 +139,14 @@ profile
   .action(async (oldName, newName) => {
     const options = program.opts()
     await profileRenameCommand(options, oldName, newName)
+  })
+
+profile
+  .command("template")
+  .description("Create or update the profile template file")
+  .action(async () => {
+    const options = program.opts()
+    await profileTemplateCommand(options)
   })
 
 program
