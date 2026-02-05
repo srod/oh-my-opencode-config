@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+### Minor Changes
+
+- [#2](https://github.com/srod/oh-my-opencode-config/pull/2) [`10c4c6c`](https://github.com/srod/oh-my-opencode-config/commit/10c4c6cf6784f8e0ef10ed9508b7b52efe907b70) Thanks [@srod](https://github.com/srod)! - Add profile template support, preserve unknown config keys, and introduce a profile template command with CLI/menu integration.
+
+### Patch Changes
+
+- [#5](https://github.com/srod/oh-my-opencode-config/pull/5) [`82aff32`](https://github.com/srod/oh-my-opencode-config/commit/82aff3270791c953e1943532eabbcd26bbaf6aab) Thanks [@srod](https://github.com/srod)! - Doctor now reports npm update availability for opencode and oh-my-opencode.
+
 ## [0.2.0] - 2026-02-04
 
 ### Minor Changes
