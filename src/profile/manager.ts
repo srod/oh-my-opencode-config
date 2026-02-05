@@ -245,7 +245,13 @@ async function loadConfigFromFile(filePath: string): Promise<Config | null> {
   try {
     json = await readJsonFile(filePath)
   } catch (error) {
-    if (isErrnoException(error) && error.code === "ENOENT") {
+    if (error instanceof PermissionDeniedError) {
+      return null
+    }
+    if (
+      isErrnoException(error) &&
+      (error.code === "ENOENT" || error.code === "EACCES" || error.code === "EPERM")
+    ) {
       return null
     }
     throw error

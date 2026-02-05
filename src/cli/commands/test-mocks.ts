@@ -146,8 +146,8 @@ mock.module("#errors/handlers.js", () => ({
 
 export const mockCheckNpmUpdates = mock(() =>
   Promise.resolve({
-    opencode: { latest: null, updateAvailable: null },
-    ohMyOpencode: { latest: null, updateAvailable: null },
+    opencode: { latest: null, updateAvailable: null, error: null },
+    ohMyOpencode: { latest: null, updateAvailable: null, error: null },
   }),
 )
 mock.module("#utils/npm.js", () => ({

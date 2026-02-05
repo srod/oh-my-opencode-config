@@ -16,11 +16,17 @@ interface SemverParts {
 export interface NpmUpdateStatus {
   latest: string | null
   updateAvailable: boolean | null
+  error: string | null
 }
 
 export interface NpmUpdateReport {
   opencode: NpmUpdateStatus
   ohMyOpencode: NpmUpdateStatus
+}
+
+interface NpmRegistryResult {
+  latest: string | null
+  error: string | null
 }
 
 function parseSemver(value: string): SemverParts | null {
@@ -113,25 +119,48 @@ function compareSemver(a: SemverParts, b: SemverParts): number {
   return comparePrerelease(a.prerelease, b.prerelease)
 }
 
-function buildUpdateStatus(current: string | null, latest: string | null): NpmUpdateStatus {
-  if (!current || !latest) {
-    return { latest, updateAvailable: null }
+function buildUpdateStatus(
+  current: string | null,
+  latestResult: NpmRegistryResult,
+): NpmUpdateStatus {
+  if (!current || !latestResult.latest) {
+    return {
+      latest: latestResult.latest,
+      updateAvailable: null,
+      error: latestResult.error,
+    }
   }
 
   const currentSemver = extractSemver(current)
-  const latestSemver = extractSemver(latest)
+  const latestSemver = extractSemver(latestResult.latest)
 
   if (!currentSemver || !latestSemver) {
-    return { latest, updateAvailable: null }
+    return {
+      latest: latestResult.latest,
+      updateAvailable: null,
+      error: latestResult.error,
+    }
   }
 
   return {
-    latest,
+    latest: latestResult.latest,
     updateAvailable: compareSemver(currentSemver, latestSemver) < 0,
+    error: latestResult.error,
   }
 }
 
-async function getLatestNpmVersion(packageName: string): Promise<string | null> {
+function buildFetchErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.name === "AbortError") {
+    return "request timed out"
+  }
+  if (error instanceof Error) {
+    const message = error.message.trim()
+    return message.length > 0 ? message : "request failed"
+  }
+  return "request failed"
+}
+
+async function getLatestNpmVersion(packageName: string): Promise<NpmRegistryResult> {
   const controller = new AbortController()
   const timeoutMs = 4000
   const timeoutId = setTimeout(() => {
@@ -143,17 +172,20 @@ async function getLatestNpmVersion(packageName: string): Promise<string | null> 
       signal: controller.signal,
     })
     if (!response.ok) {
-      return null
+      return { latest: null, error: `HTTP ${response.status}` }
     }
     const data: unknown = await response.json()
     const parsed = NpmRegistrySchema.safeParse(data)
     if (!parsed.success) {
-      return null
+      return { latest: null, error: "invalid registry response" }
     }
     const latest = parsed.data["dist-tags"].latest.trim()
-    return latest.length > 0 ? latest : null
-  } catch {
-    return null
+    if (latest.length === 0) {
+      return { latest: null, error: "latest tag missing" }
+    }
+    return { latest, error: null }
+  } catch (error) {
+    return { latest: null, error: buildFetchErrorMessage(error) }
   } finally {
     clearTimeout(timeoutId)
   }

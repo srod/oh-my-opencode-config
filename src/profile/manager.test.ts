@@ -211,6 +211,24 @@ describe("profile manager", () => {
 
       expect(parsed.google_auth).toBeUndefined()
     })
+
+    test("ignores unreadable template files", async () => {
+      const templatePath = path.join(tempDir, "unreadable-template.json")
+      await fs.writeFile(templatePath, JSON.stringify({ google_auth: false }, null, 2))
+      await fs.chmod(templatePath, 0o000)
+
+      try {
+        const config = ConfigSchema.parse({ agents: {}, categories: {} })
+        await saveProfile(tempDir, "unreadable", config, { templatePath })
+
+        const profilePath = path.join(tempDir, "oh-my-opencode-unreadable.json")
+        const parsed = JSON.parse(await fs.readFile(profilePath, "utf-8"))
+
+        expect(parsed.google_auth).toBeUndefined()
+      } finally {
+        await fs.chmod(templatePath, 0o644)
+      }
+    })
   })
 
   // ============================================================================

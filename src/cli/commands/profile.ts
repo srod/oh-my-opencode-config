@@ -5,6 +5,7 @@ import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { handleError } from "#errors/handlers.js"
+import { InvalidConfigError } from "#errors/types.js"
 import {
   PROFILE_NAME_MAX_LENGTH,
   PROFILE_NAME_REGEX,
@@ -30,6 +31,30 @@ import { printBlank, printLine } from "#utils/output.js"
  */
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)
+}
+
+function isWithinDir(candidatePath: string, baseDir: string): boolean {
+  const relative = path.relative(baseDir, candidatePath)
+  if (relative === "") {
+    return true
+  }
+  return !relative.startsWith("..") && !path.isAbsolute(relative)
+}
+
+function resolveTemplateOutputPath(configDir: string, templateOverride?: string): string {
+  const configDirResolved = path.resolve(configDir)
+  const trimmedOverride = templateOverride?.trim()
+  const candidate = trimmedOverride
+    ? path.isAbsolute(trimmedOverride)
+      ? path.resolve(trimmedOverride)
+      : path.resolve(configDirResolved, trimmedOverride)
+    : path.resolve(configDirResolved, PROFILE_TEMPLATE_FILE_NAME)
+
+  if (!isWithinDir(candidate, configDirResolved)) {
+    throw new InvalidConfigError(`Template path must be within ${configDirResolved}`)
+  }
+
+  return candidate
 }
 
 /**
@@ -110,12 +135,7 @@ export async function profileTemplateCommand(
   try {
     const configPath = resolveConfigPath(options.config)
     const configDir = getConfigDir(configPath)
-    const templateOverride = options.template?.trim()
-    const templatePath = templateOverride
-      ? path.isAbsolute(templateOverride)
-        ? templateOverride
-        : path.resolve(configDir, templateOverride)
-      : path.join(configDir, PROFILE_TEMPLATE_FILE_NAME)
+    const templatePath = resolveTemplateOutputPath(configDir, options.template)
     const config = await loadConfig(configPath)
 
     const exists = await fileExists(templatePath)

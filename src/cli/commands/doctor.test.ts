@@ -53,8 +53,8 @@ interface DiagnosticReport {
   stats: { errors: number; warnings: number; info: number }
   versions: { opencode: string | null; ohMyOpencode: string | null }
   updates: {
-    opencode: { latest: string | null; updateAvailable: boolean | null }
-    ohMyOpencode: { latest: string | null; updateAvailable: boolean | null }
+    opencode: { latest: string | null; updateAvailable: boolean | null; error: string | null }
+    ohMyOpencode: { latest: string | null; updateAvailable: boolean | null; error: string | null }
   }
   summary: {
     agentsConfigured: number
