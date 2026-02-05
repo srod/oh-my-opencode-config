@@ -5,6 +5,7 @@ import { profileTemplateCommand } from "#cli/commands/profile.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
+import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "#profile/constants.js"
 import {
   deleteProfile as deleteProfileFn,
   listProfiles as listProfilesFn,
@@ -183,12 +184,12 @@ export async function menuProfileDelete(
 }
 
 /**
- * Invoke the profile template command with the provided CLI options.
+ * Run the profile template command using the provided CLI options.
  *
- * @param options - CLI options containing `config` (path to config) and `verbose` (enable verbose output)
+ * @param options - CLI options forwarded to the profile template command. Recognized fields include `config`, `verbose`, `dryRun`, and `template`.
  */
 export async function menuProfileTemplate(
-  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
 ): Promise<void> {
   await profileTemplateCommand(options)
 }
@@ -203,14 +204,23 @@ function pathDirname(configPath: string): string {
   return path.dirname(configPath)
 }
 
+/**
+ * Validate a proposed profile name and return an error message when it violates naming rules.
+ *
+ * Acceptable names are non-empty, at most PROFILE_NAME_MAX_LENGTH characters, and contain only letters,
+ * numbers, hyphens, and underscores as defined by PROFILE_NAME_REGEX.
+ *
+ * @param value - The profile name to validate
+ * @returns An error message describing the validation failure, or `undefined` when `value` is valid
+ */
 function validateProfileName(value: string | undefined): string | undefined {
   if (!value || value.length === 0) {
     return "Profile name is required"
   }
-  if (value.length > 50) {
-    return "Profile name must be 50 characters or less"
+  if (value.length > PROFILE_NAME_MAX_LENGTH) {
+    return `Profile name must be ${PROFILE_NAME_MAX_LENGTH} characters or less`
   }
-  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+  if (!PROFILE_NAME_REGEX.test(value)) {
     return "Profile name must contain only letters, numbers, hyphens, and underscores"
   }
   return undefined

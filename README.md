@@ -63,7 +63,7 @@ This tool writes `oh-my-opencode.json` and reads `opencode.json` for custom mode
 
 Discovery order:
 1. `--config`
-2. `.opencode/oh-my-opencode.json` (searches up from the current directory)
+2. `./.opencode/oh-my-opencode.json` (current directory)
 3. `~/.config/opencode/oh-my-opencode.json`
 
 Models cache: `~/.cache/opencode/models.json`

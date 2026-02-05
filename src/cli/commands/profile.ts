@@ -5,6 +5,7 @@ import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { handleError } from "#errors/handlers.js"
+import { InvalidConfigError } from "#errors/types.js"
 import {
   PROFILE_NAME_MAX_LENGTH,
   PROFILE_NAME_REGEX,
@@ -23,13 +24,52 @@ import { atomicWrite, fileExists } from "#utils/fs.js"
 import { printBlank, printLine } from "#utils/output.js"
 
 /**
- * Get the directory portion of a configuration file path.
+ * Gets the directory portion of a configuration file path.
  *
  * @param configPath - The full path to the configuration file
  * @returns The directory portion of `configPath`
  */
 function getConfigDir(configPath: string): string {
   return path.dirname(configPath)
+}
+
+/**
+ * Checks whether a candidate path resides within (or is equal to) a base directory.
+ *
+ * @param candidatePath - The path to test (absolute or relative)
+ * @param baseDir - The directory to test against (absolute or relative)
+ * @returns `true` if `candidatePath` is the same as `baseDir` or is located inside `baseDir`, `false` otherwise
+ */
+function isWithinDir(candidatePath: string, baseDir: string): boolean {
+  const relative = path.relative(baseDir, candidatePath)
+  if (relative === "") {
+    return true
+  }
+  return !relative.startsWith("..") && !path.isAbsolute(relative)
+}
+
+/**
+ * Resolves the filesystem path where a profile template should be written.
+ *
+ * @param configDir - Base configuration directory used to resolve relative overrides.
+ * @param templateOverride - Optional absolute path or path relative to `configDir` to override the default template location.
+ * @returns The absolute path to the resolved template file.
+ * @throws InvalidConfigError if the resolved path is not located inside `configDir`.
+ */
+function resolveTemplateOutputPath(configDir: string, templateOverride?: string): string {
+  const configDirResolved = path.resolve(configDir)
+  const trimmedOverride = templateOverride?.trim()
+  const candidate = trimmedOverride
+    ? path.isAbsolute(trimmedOverride)
+      ? path.resolve(trimmedOverride)
+      : path.resolve(configDirResolved, trimmedOverride)
+    : path.resolve(configDirResolved, PROFILE_TEMPLATE_FILE_NAME)
+
+  if (!isWithinDir(candidate, configDirResolved)) {
+    throw new InvalidConfigError(`Template path must be within ${configDirResolved}`)
+  }
+
+  return candidate
 }
 
 /**
@@ -101,15 +141,16 @@ export async function profileSaveCommand(
  * is true, reports whether it would create or overwrite the template without writing any files.
  *
  * @param options - Options containing the resolved config path (`config`), a verbose flag (`verbose`),
- *   and a `dryRun` flag that causes the command to only report intended actions
+ *   a `dryRun` flag that causes the command to only report intended actions, and an optional `template`
+ *   path override for the template destination
  */
 export async function profileTemplateCommand(
-  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
 ): Promise<void> {
   try {
     const configPath = resolveConfigPath(options.config)
     const configDir = getConfigDir(configPath)
-    const templatePath = path.join(configDir, PROFILE_TEMPLATE_FILE_NAME)
+    const templatePath = resolveTemplateOutputPath(configDir, options.template)
     const config = await loadConfig(configPath)
 
     const exists = await fileExists(templatePath)

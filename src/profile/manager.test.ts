@@ -195,7 +195,7 @@ describe("profile manager", () => {
       expect(parsed.agents.oracle.model).toBe("gpt-5")
     })
 
-    test("falls back to default template path when explicit template is missing", async () => {
+    test("does not fall back to default template path when explicit template is missing", async () => {
       const configPath = path.join(tempDir, "oh-my-opencode.json")
       const fallbackTemplatePath = path.join(tempDir, "oh-my-opencode.template.json")
       await fs.writeFile(fallbackTemplatePath, JSON.stringify({ google_auth: false }, null, 2))
@@ -209,7 +209,25 @@ describe("profile manager", () => {
       const profilePath = path.join(tempDir, "oh-my-opencode-fallback.json")
       const parsed = JSON.parse(await fs.readFile(profilePath, "utf-8"))
 
-      expect(parsed.google_auth).toBe(false)
+      expect(parsed.google_auth).toBeUndefined()
+    })
+
+    test("ignores unreadable template files", async () => {
+      const templatePath = path.join(tempDir, "unreadable-template.json")
+      await fs.writeFile(templatePath, JSON.stringify({ google_auth: false }, null, 2))
+      await fs.chmod(templatePath, 0o000)
+
+      try {
+        const config = ConfigSchema.parse({ agents: {}, categories: {} })
+        await saveProfile(tempDir, "unreadable", config, { templatePath })
+
+        const profilePath = path.join(tempDir, "oh-my-opencode-unreadable.json")
+        const parsed = JSON.parse(await fs.readFile(profilePath, "utf-8"))
+
+        expect(parsed.google_auth).toBeUndefined()
+      } finally {
+        await fs.chmod(templatePath, 0o644)
+      }
     })
   })
 

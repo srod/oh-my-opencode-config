@@ -231,6 +231,26 @@ describe("profile commands", () => {
       const parsed = ConfigSchema.parse(JSON.parse(await fs.readFile(templatePath, "utf-8")))
       expect(parsed.google_auth).toBe(false)
     })
+
+    test("rejects template overrides outside the config directory", async () => {
+      const nestedDir = path.join(tempDir, "nested")
+      await fs.mkdir(nestedDir, { recursive: true })
+      const nestedConfigPath = path.join(nestedDir, "oh-my-opencode.json")
+      const config = ConfigSchema.parse({ agents: {}, categories: {} })
+      await fs.writeFile(nestedConfigPath, JSON.stringify(config, null, 2))
+
+      const outsidePath = path.join(tempDir, "outside-template.json")
+      const options = { config: nestedConfigPath, verbose: false, template: outsidePath }
+      await profileTemplateCommand(options)
+
+      const exists = await fs
+        .access(outsidePath)
+        .then(() => true)
+        .catch(() => false)
+
+      expect(exists).toBe(false)
+      expect(mockOutro).not.toHaveBeenCalled()
+    })
   })
 
   describe("profileUseCommand", () => {
