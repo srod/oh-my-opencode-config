@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+### Patch Changes
+
+- [#9](https://github.com/srod/oh-my-opencode-config/pull/9) [`46ea1d3`](https://github.com/srod/oh-my-opencode-config/commit/46ea1d34be44cc87dacde138b1b4c723a0927793) Thanks [@srod](https://github.com/srod)! - chore: trigger release
+
 ## 0.3.0
 
 ### Minor Changes
