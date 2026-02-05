@@ -24,7 +24,7 @@ import { atomicWrite, fileExists } from "#utils/fs.js"
 import { printBlank, printLine } from "#utils/output.js"
 
 /**
- * Get the directory portion of a configuration file path.
+ * Gets the directory portion of a configuration file path.
  *
  * @param configPath - The full path to the configuration file
  * @returns The directory portion of `configPath`
@@ -33,6 +33,13 @@ function getConfigDir(configPath: string): string {
   return path.dirname(configPath)
 }
 
+/**
+ * Checks whether a candidate path resides within (or is equal to) a base directory.
+ *
+ * @param candidatePath - The path to test (absolute or relative)
+ * @param baseDir - The directory to test against (absolute or relative)
+ * @returns `true` if `candidatePath` is the same as `baseDir` or is located inside `baseDir`, `false` otherwise
+ */
 function isWithinDir(candidatePath: string, baseDir: string): boolean {
   const relative = path.relative(baseDir, candidatePath)
   if (relative === "") {
@@ -41,6 +48,14 @@ function isWithinDir(candidatePath: string, baseDir: string): boolean {
   return !relative.startsWith("..") && !path.isAbsolute(relative)
 }
 
+/**
+ * Resolves the filesystem path where a profile template should be written.
+ *
+ * @param configDir - Base configuration directory used to resolve relative overrides.
+ * @param templateOverride - Optional absolute path or path relative to `configDir` to override the default template location.
+ * @returns The absolute path to the resolved template file.
+ * @throws InvalidConfigError if the resolved path is not located inside `configDir`.
+ */
 function resolveTemplateOutputPath(configDir: string, templateOverride?: string): string {
   const configDirResolved = path.resolve(configDir)
   const trimmedOverride = templateOverride?.trim()

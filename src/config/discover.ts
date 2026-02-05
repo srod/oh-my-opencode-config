@@ -10,6 +10,15 @@ export interface DiscoverConfigPathDeps {
   userConfigFullPath?: string
 }
 
+/**
+ * Locate a configuration file path by checking a project-relative location first, then a user-wide location.
+ *
+ * @param deps - Optional dependency overrides:
+ *   - `existsSync`: function to test file existence (defaults to the module `existsSync`).
+ *   - `projectConfigRelPath`: project-relative config path to check under the current working directory.
+ *   - `userConfigFullPath`: full user config path to check if the project-relative path is absent.
+ * @returns The discovered config file path, or `null` if neither location exists.
+ */
 export function discoverConfigPath(deps: DiscoverConfigPathDeps = {}): string | null {
   const exists = deps.existsSync ?? existsSync
   const projectRelPath = deps.projectConfigRelPath ?? PROJECT_CONFIG_REL_PATH
