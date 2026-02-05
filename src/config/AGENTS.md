@@ -7,7 +7,7 @@ Core configuration handling: discovery, loading, resolution, writing.
 | File | Purpose |
 |------|---------|
 | `resolve.ts` | `resolveConfigPath(option?)` — single entry point for config path resolution. Uses `\|\|` semantics (empty strings fall through). **All commands use this.** |
-| `discover.ts` | Find config: project `.opencode/` → git root → `~/.config/opencode/`. Called by `resolve.ts`. |
+| `discover.ts` | Find config: project `.opencode/` → `~/.config/opencode/`. Called by `resolve.ts`. |
 | `loader.ts` | Read + Zod validate → typed `Config`. Returns `DEFAULT_CONFIG` if file missing. |
 | `writer.ts` | Atomic writes (temp + rename), concurrent modification detection via mtime |
 | `defaults.ts` | Default model assignments (synced from oh-my-opencode repo) |
@@ -28,8 +28,7 @@ const configPath = options.config || discoverConfigPath() || USER_CONFIG_FULL_PA
 
 1. `--config <path>` flag (explicit)
 2. `./.opencode/oh-my-opencode.json` (project-level)
-3. Git root `.opencode/oh-my-opencode.json` (searches up)
-4. `~/.config/opencode/oh-my-opencode.json` (user-level)
+3. `~/.config/opencode/oh-my-opencode.json` (user-level)
 
 ## Atomic Write (CRITICAL)
 

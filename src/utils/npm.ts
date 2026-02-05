@@ -53,6 +53,54 @@ function extractSemver(value: string): SemverParts | null {
   return parseSemver(match[0])
 }
 
+function isNumericIdentifier(value: string): boolean {
+  return /^\d+$/u.test(value)
+}
+
+function comparePrerelease(a: string, b: string): number {
+  const aParts = a.split(".")
+  const bParts = b.split(".")
+  const maxLength = Math.max(aParts.length, bParts.length)
+
+  for (let i = 0; i < maxLength; i += 1) {
+    const aPart = aParts[i]
+    const bPart = bParts[i]
+
+    if (aPart === undefined) {
+      return -1
+    }
+    if (bPart === undefined) {
+      return 1
+    }
+    if (aPart === bPart) {
+      continue
+    }
+
+    const aIsNumeric = isNumericIdentifier(aPart)
+    const bIsNumeric = isNumericIdentifier(bPart)
+
+    if (aIsNumeric && bIsNumeric) {
+      const aNum = Number(aPart)
+      const bNum = Number(bPart)
+      if (aNum !== bNum) {
+        return aNum - bNum
+      }
+      continue
+    }
+
+    if (aIsNumeric) {
+      return -1
+    }
+    if (bIsNumeric) {
+      return 1
+    }
+
+    return aPart < bPart ? -1 : 1
+  }
+
+  return 0
+}
+
 function compareSemver(a: SemverParts, b: SemverParts): number {
   if (a.major !== b.major) return a.major - b.major
   if (a.minor !== b.minor) return a.minor - b.minor
@@ -62,7 +110,7 @@ function compareSemver(a: SemverParts, b: SemverParts): number {
   if (a.prerelease === null) return 1
   if (b.prerelease === null) return -1
 
-  return a.prerelease.localeCompare(b.prerelease)
+  return comparePrerelease(a.prerelease, b.prerelease)
 }
 
 function buildUpdateStatus(current: string | null, latest: string | null): NpmUpdateStatus {
@@ -84,8 +132,16 @@ function buildUpdateStatus(current: string | null, latest: string | null): NpmUp
 }
 
 async function getLatestNpmVersion(packageName: string): Promise<string | null> {
+  const controller = new AbortController()
+  const timeoutMs = 4000
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+  }, timeoutMs)
+
   try {
-    const response = await fetch(`https://registry.npmjs.org/${packageName}`)
+    const response = await fetch(`https://registry.npmjs.org/${packageName}`, {
+      signal: controller.signal,
+    })
     if (!response.ok) {
       return null
     }
@@ -98,6 +154,8 @@ async function getLatestNpmVersion(packageName: string): Promise<string | null> 
     return latest.length > 0 ? latest : null
   } catch {
     return null
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 

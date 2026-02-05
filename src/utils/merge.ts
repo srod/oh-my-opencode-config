@@ -3,6 +3,8 @@
  *
  * @returns `true` if `value` is a non-null, non-array object whose prototype is `Object.prototype` or `null`, `false` otherwise.
  */
+const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"])
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) {
     return false
@@ -38,10 +40,9 @@ export function deepMerge(base: unknown, override: unknown): unknown {
   if (isPlainObject(base) && isPlainObject(override)) {
     const result: Record<string, unknown> = {}
     const keys = new Set([...Object.keys(base), ...Object.keys(override)])
-    const blockedKeys = new Set(["__proto__", "constructor", "prototype"])
 
     for (const key of keys) {
-      if (blockedKeys.has(key)) {
+      if (BLOCKED_KEYS.has(key)) {
         continue
       }
       if (hasOwnKey(override, key)) {

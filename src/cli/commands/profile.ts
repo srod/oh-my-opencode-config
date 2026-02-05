@@ -101,15 +101,21 @@ export async function profileSaveCommand(
  * is true, reports whether it would create or overwrite the template without writing any files.
  *
  * @param options - Options containing the resolved config path (`config`), a verbose flag (`verbose`),
- *   and a `dryRun` flag that causes the command to only report intended actions
+ *   a `dryRun` flag that causes the command to only report intended actions, and an optional `template`
+ *   path override for the template destination
  */
 export async function profileTemplateCommand(
-  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
 ): Promise<void> {
   try {
     const configPath = resolveConfigPath(options.config)
     const configDir = getConfigDir(configPath)
-    const templatePath = path.join(configDir, PROFILE_TEMPLATE_FILE_NAME)
+    const templateOverride = options.template?.trim()
+    const templatePath = templateOverride
+      ? path.isAbsolute(templateOverride)
+        ? templateOverride
+        : path.resolve(configDir, templateOverride)
+      : path.join(configDir, PROFILE_TEMPLATE_FILE_NAME)
     const config = await loadConfig(configPath)
 
     const exists = await fileExists(templatePath)

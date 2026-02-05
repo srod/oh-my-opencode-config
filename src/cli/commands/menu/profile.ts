@@ -5,6 +5,7 @@ import { profileTemplateCommand } from "#cli/commands/profile.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
 import { resolveConfigPath } from "#config/resolve.js"
+import { PROFILE_NAME_MAX_LENGTH, PROFILE_NAME_REGEX } from "#profile/constants.js"
 import {
   deleteProfile as deleteProfileFn,
   listProfiles as listProfilesFn,
@@ -188,7 +189,7 @@ export async function menuProfileDelete(
  * @param options - CLI options containing `config` (path to config) and `verbose` (enable verbose output)
  */
 export async function menuProfileTemplate(
-  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun">,
+  options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
 ): Promise<void> {
   await profileTemplateCommand(options)
 }
@@ -207,10 +208,10 @@ function validateProfileName(value: string | undefined): string | undefined {
   if (!value || value.length === 0) {
     return "Profile name is required"
   }
-  if (value.length > 50) {
-    return "Profile name must be 50 characters or less"
+  if (value.length > PROFILE_NAME_MAX_LENGTH) {
+    return `Profile name must be ${PROFILE_NAME_MAX_LENGTH} characters or less`
   }
-  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+  if (!PROFILE_NAME_REGEX.test(value)) {
     return "Profile name must contain only letters, numbers, hyphens, and underscores"
   }
   return undefined

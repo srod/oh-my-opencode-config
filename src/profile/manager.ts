@@ -241,11 +241,15 @@ async function readJsonFile(filePath: string): Promise<unknown> {
  * @throws InvalidConfigError - if the file exists and its contents fail schema validation (includes combined issue messages)
  */
 async function loadConfigFromFile(filePath: string): Promise<Config | null> {
-  const exists = await fileExists(filePath)
-  if (!exists) {
-    return null
+  let json: unknown
+  try {
+    json = await readJsonFile(filePath)
+  } catch (error) {
+    if (isErrnoException(error) && error.code === "ENOENT") {
+      return null
+    }
+    throw error
   }
-  const json = await readJsonFile(filePath)
   const result = ConfigSchema.safeParse(json)
   if (!result.success) {
     const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")
@@ -259,7 +263,7 @@ async function loadConfigFromFile(filePath: string): Promise<Config | null> {
  *
  * @param configDir - The directory containing configuration files; used to determine the default config path when `options.configPath` is not provided.
  * @param options - Optional overrides:
- *   - `templatePath`: explicit template file path to prefer if it exists.
+ *   - `templatePath`: explicit template file path to prefer if it exists (relative paths are resolved against `configDir`).
  *   - `configPath`: explicit main config file path used to locate a fallback template in the same directory.
  * @returns The path to the template file if found, `null` otherwise.
  */
@@ -267,12 +271,13 @@ async function resolveTemplatePath(
   configDir: string,
   options?: SaveProfileOptions,
 ): Promise<string | null> {
-  const explicitPath = options?.templatePath
+  const explicitPath = options?.templatePath?.trim()
   if (explicitPath) {
-    const explicitExists = await fileExists(explicitPath)
-    if (explicitExists) {
-      return explicitPath
-    }
+    const candidate = path.isAbsolute(explicitPath)
+      ? explicitPath
+      : path.resolve(configDir, explicitPath)
+    const explicitExists = await fileExists(candidate)
+    return explicitExists ? candidate : null
   }
 
   const configPath = options?.configPath ?? getConfigPath(configDir)
