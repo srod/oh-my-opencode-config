@@ -5,6 +5,11 @@
  */
 const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"])
 
+/**
+ * Determines whether a value is a plain object (an object that is not an array or null and whose prototype is `Object.prototype` or `null`).
+ *
+ * @returns `true` if `value` is a plain object (not `null` or an array) with prototype `Object.prototype` or `null`, `false` otherwise.
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) {
     return false

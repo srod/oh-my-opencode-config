@@ -234,10 +234,10 @@ async function readJsonFile(filePath: string): Promise<unknown> {
 }
 
 /**
- * Load and validate a Config object from a JSON file.
+ * Load a Config from a JSON file and validate it against the Config schema.
  *
  * @param filePath - Path to the JSON file to read
- * @returns The parsed `Config` if the file exists and validates against the schema, `null` if the file does not exist
+ * @returns The parsed `Config` when the file exists and passes schema validation, or `null` if the file is missing or cannot be accessed due to permissions
  * @throws InvalidConfigError - if the file exists and its contents fail schema validation (includes combined issue messages)
  */
 async function loadConfigFromFile(filePath: string): Promise<Config | null> {
@@ -265,13 +265,13 @@ async function loadConfigFromFile(filePath: string): Promise<Config | null> {
 }
 
 /**
- * Resolves the filesystem path to a profile template file if one can be found.
+ * Locate a profile template file, preferring an explicit templatePath and falling back to a template next to the main config.
  *
- * @param configDir - The directory containing configuration files; used to determine the default config path when `options.configPath` is not provided.
+ * @param configDir - Directory containing configuration files; used to resolve relative `templatePath` values and to locate the default config when `options.configPath` is not provided.
  * @param options - Optional overrides:
- *   - `templatePath`: explicit template file path to prefer if it exists (relative paths are resolved against `configDir`).
+ *   - `templatePath`: explicit template file path to prefer; whitespace is trimmed and relative paths are resolved against `configDir`.
  *   - `configPath`: explicit main config file path used to locate a fallback template in the same directory.
- * @returns The path to the template file if found, `null` otherwise.
+ * @returns The resolved template file path if a template exists, `null` otherwise.
  */
 async function resolveTemplatePath(
   configDir: string,

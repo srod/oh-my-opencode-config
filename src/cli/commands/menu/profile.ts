@@ -184,9 +184,9 @@ export async function menuProfileDelete(
 }
 
 /**
- * Invoke the profile template command with the provided CLI options.
+ * Run the profile template command using the provided CLI options.
  *
- * @param options - CLI options containing `config` (path to config) and `verbose` (enable verbose output)
+ * @param options - CLI options forwarded to the profile template command. Recognized fields include `config`, `verbose`, `dryRun`, and `template`.
  */
 export async function menuProfileTemplate(
   options: Pick<BaseCommandOptions, "config" | "verbose" | "dryRun" | "template">,
@@ -204,6 +204,15 @@ function pathDirname(configPath: string): string {
   return path.dirname(configPath)
 }
 
+/**
+ * Validate a proposed profile name and return an error message when it violates naming rules.
+ *
+ * Acceptable names are non-empty, at most PROFILE_NAME_MAX_LENGTH characters, and contain only letters,
+ * numbers, hyphens, and underscores as defined by PROFILE_NAME_REGEX.
+ *
+ * @param value - The profile name to validate
+ * @returns An error message describing the validation failure, or `undefined` when `value` is valid
+ */
 function validateProfileName(value: string | undefined): string | undefined {
   if (!value || value.length === 0) {
     return "Profile name is required"
