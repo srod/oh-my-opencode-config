@@ -105,6 +105,8 @@
     "check": "biome check src",
     "check:fix": "biome check --write src",
     "typecheck": "tsc --noEmit",
+    "sync:agents:check": "bun --conditions=source src/scripts/sync-agent-defaults.ts --check",
+    "sync:agents:apply": "bun --conditions=source src/scripts/sync-agent-defaults.ts --apply",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "bun run build && changeset publish"
