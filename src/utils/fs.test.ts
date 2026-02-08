@@ -101,6 +101,23 @@ describe("atomicWrite", () => {
     expect(targetContent).toBe('{"agents":{"oracle":{"model":"updated"}}}')
   })
 
+  test("writes through dangling symlink targets without replacing the symlink", async () => {
+    const targetPath = path.join(tmpDir, "missing-profile.json")
+    const symlinkPath = path.join(tmpDir, "oh-my-opencode.json")
+
+    await fs.symlink(targetPath, symlinkPath)
+    await atomicWrite(symlinkPath, '{"agents":{"oracle":{"model":"updated"}}}')
+
+    const symlinkStats = await fs.lstat(symlinkPath)
+    expect(symlinkStats.isSymbolicLink()).toBe(true)
+
+    const symlinkTarget = await fs.readlink(symlinkPath)
+    expect(path.resolve(path.dirname(symlinkPath), symlinkTarget)).toBe(targetPath)
+
+    const targetContent = await Bun.file(targetPath).text()
+    expect(targetContent).toBe('{"agents":{"oracle":{"model":"updated"}}}')
+  })
+
   test("leaves no temp files after successful write", async () => {
     const filePath = path.join(tmpDir, "clean.txt")
     await atomicWrite(filePath, "content")

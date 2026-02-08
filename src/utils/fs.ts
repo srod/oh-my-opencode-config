@@ -32,14 +32,36 @@ export async function atomicWrite(filePath: string, content: string): Promise<vo
 }
 
 async function resolveWritePath(filePath: string): Promise<string> {
-  try {
-    return await fs.realpath(filePath)
-  } catch (error) {
-    if (isErrnoException(error) && error.code === "ENOENT") {
-      return filePath
+  const seenPaths = new Set<string>()
+  let currentPath = filePath
+
+  for (let depth = 0; depth < 40; depth++) {
+    try {
+      const stats = await fs.lstat(currentPath)
+      if (!stats.isSymbolicLink()) {
+        return currentPath
+      }
+
+      const symlinkTarget = await fs.readlink(currentPath)
+      const nextPath = path.isAbsolute(symlinkTarget)
+        ? symlinkTarget
+        : path.resolve(path.dirname(currentPath), symlinkTarget)
+
+      if (seenPaths.has(nextPath)) {
+        throw new Error(`Symlink loop detected while resolving write path for "${filePath}"`)
+      }
+
+      seenPaths.add(nextPath)
+      currentPath = nextPath
+    } catch (error) {
+      if (isErrnoException(error) && error.code === "ENOENT") {
+        return currentPath
+      }
+      throw error
     }
-    throw error
   }
+
+  throw new Error(`Too many symlink levels while resolving write path for "${filePath}"`)
 }
 
 export function isErrnoException(error: unknown): error is NodeJS.ErrnoException {

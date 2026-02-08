@@ -72,18 +72,21 @@ describe("buildExpectedAgentDefaults", () => {
       sisyphus: { model: "anthropic/claude-opus-4-5", variant: "max" },
       momus: { model: "openai/gpt-5.2" },
       explore: { model: "x-ai/grok-code-fast-1", variant: "low" },
+      local: { model: "custom-model" },
     }
 
     const upstream = {
-      sisyphus: { model: "claude-opus-4-6", variant: "max" },
+      sisyphus: { model: "anthropic/claude-opus-4-6", variant: "max" },
       momus: { model: "gpt-5.2", variant: "medium" },
       explore: { model: "grok-code-fast-1" },
+      local: { model: "openai/gpt-5-mini" },
     }
 
     const expected = buildExpectedAgentDefaults(current, upstream)
     expect(expected.sisyphus).toEqual({ model: "anthropic/claude-opus-4-6", variant: "max" })
     expect(expected.momus).toEqual({ model: "openai/gpt-5.2", variant: "medium" })
     expect(expected.explore).toEqual({ model: "x-ai/grok-code-fast-1" })
+    expect(expected.local).toEqual({ model: "openai/gpt-5-mini" })
   })
 })
 

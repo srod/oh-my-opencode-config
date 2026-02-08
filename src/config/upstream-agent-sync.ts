@@ -251,7 +251,12 @@ export function buildExpectedAgentDefaults(
 
     const slashIndex = config.model.indexOf("/")
     const provider = slashIndex >= 0 ? config.model.slice(0, slashIndex) : ""
-    const model = provider.length > 0 ? `${provider}/${upstreamConfig.model}` : upstreamConfig.model
+    const upstreamSlashIndex = upstreamConfig.model.indexOf("/")
+    const upstreamModelName =
+      upstreamSlashIndex >= 0
+        ? upstreamConfig.model.slice(upstreamSlashIndex + 1)
+        : upstreamConfig.model
+    const model = provider.length > 0 ? `${provider}/${upstreamModelName}` : upstreamConfig.model
 
     expected[agent] = upstreamConfig.variant
       ? { model, variant: upstreamConfig.variant }
