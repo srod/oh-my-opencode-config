@@ -10,19 +10,43 @@ export async function fileExists(filePath: string): Promise<boolean> {
 }
 
 export async function atomicWrite(filePath: string, content: string): Promise<void> {
-  const tmpPath = `${filePath}.tmp`
-  const dir = path.dirname(filePath)
+  let tmpPath: string | null = null
 
   try {
+    const writePath = await resolveWritePath(filePath)
+    tmpPath = `${writePath}.tmp`
+    const dir = path.dirname(writePath)
+
     await fs.mkdir(dir, { recursive: true })
     await Bun.write(tmpPath, content)
-    await fs.rename(tmpPath, filePath)
+    await fs.rename(tmpPath, writePath)
   } catch (error) {
-    try {
-      await fs.unlink(tmpPath)
-    } catch {}
+    if (tmpPath) {
+      try {
+        await fs.unlink(tmpPath)
+      } catch {}
+    }
 
     handleFileError(error, filePath, "write")
+  }
+}
+
+async function resolveWritePath(filePath: string): Promise<string> {
+  try {
+    const stats = await fs.lstat(filePath)
+    if (!stats.isSymbolicLink()) {
+      return filePath
+    }
+
+    const symlinkTarget = await fs.readlink(filePath)
+    return path.isAbsolute(symlinkTarget)
+      ? symlinkTarget
+      : path.resolve(path.dirname(filePath), symlinkTarget)
+  } catch (error) {
+    if (isErrnoException(error) && error.code === "ENOENT") {
+      return filePath
+    }
+    throw error
   }
 }
 

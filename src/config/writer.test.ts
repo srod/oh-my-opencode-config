@@ -72,4 +72,31 @@ describe("saveConfig", () => {
       saveConfig({ filePath: configPath, config, expectedMtime: mtime }),
     ).resolves.toBeUndefined()
   })
+
+  it("should preserve symlinked config files and update their target", async () => {
+    const profilePath = path.join(tempDir, "oh-my-opencode-profile.json")
+    const symlinkPath = path.join(tempDir, "oh-my-opencode.json")
+    const initialConfig = {
+      agents: {
+        oracle: { model: "gpt-4" },
+      },
+    }
+    const updatedConfig = {
+      agents: {
+        oracle: { model: "gpt-5" },
+      },
+    }
+
+    await Bun.write(profilePath, JSON.stringify(initialConfig, null, 2))
+    await fs.symlink(profilePath, symlinkPath)
+
+    await saveConfig({ filePath: symlinkPath, config: updatedConfig })
+
+    const symlinkStats = await fs.lstat(symlinkPath)
+    expect(symlinkStats.isSymbolicLink()).toBe(true)
+
+    const targetContent = await fs.readFile(profilePath, "utf8")
+    const parsedTarget = JSON.parse(targetContent)
+    expect(parsedTarget.agents.oracle.model).toBe("gpt-5")
+  })
 })
