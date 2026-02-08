@@ -57,7 +57,7 @@ function findMatchingBrace(source: string, openIndex: number): number {
     }
   }
 
-  throw new Error("Failed to match closing brace")
+  throw new Error(`Failed to match closing brace for object starting at index ${openIndex}`)
 }
 
 function findTopLevelObjectByMarker(source: string, marker: string): string {
@@ -80,7 +80,8 @@ function parseObjectKey(
   startIndex: number,
 ): { key: string; next: number } | undefined {
   const firstChar = source.charAt(startIndex)
-  if (firstChar === '"') {
+  if (firstChar === '"' || firstChar === "'") {
+    const quoteChar = firstChar
     let i = startIndex + 1
     let key = ""
     let escaped = false
@@ -95,7 +96,7 @@ function parseObjectKey(
         escaped = true
         continue
       }
-      if (char === '"') {
+      if (char === quoteChar) {
         return { key, next: i + 1 }
       }
       key += char

@@ -81,6 +81,26 @@ describe("atomicWrite", () => {
     expect(targetContent).toBe('{"agents":{"oracle":{"model":"updated"}}}')
   })
 
+  test("follows nested symlinks and writes final target", async () => {
+    const targetPath = path.join(tmpDir, "profile.json")
+    const intermediateSymlinkPath = path.join(tmpDir, "profile-link.json")
+    const symlinkPath = path.join(tmpDir, "oh-my-opencode.json")
+
+    await Bun.write(targetPath, '{"agents":{"oracle":{"model":"initial"}}}')
+    await fs.symlink(targetPath, intermediateSymlinkPath)
+    await fs.symlink(intermediateSymlinkPath, symlinkPath)
+
+    await atomicWrite(symlinkPath, '{"agents":{"oracle":{"model":"updated"}}}')
+
+    const topLevelStats = await fs.lstat(symlinkPath)
+    const intermediateStats = await fs.lstat(intermediateSymlinkPath)
+    expect(topLevelStats.isSymbolicLink()).toBe(true)
+    expect(intermediateStats.isSymbolicLink()).toBe(true)
+
+    const targetContent = await Bun.file(targetPath).text()
+    expect(targetContent).toBe('{"agents":{"oracle":{"model":"updated"}}}')
+  })
+
   test("leaves no temp files after successful write", async () => {
     const filePath = path.join(tmpDir, "clean.txt")
     await atomicWrite(filePath, "content")

@@ -30,6 +30,40 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
     expect(parsed.sisyphus).toEqual({ model: "claude-opus-4-6", variant: "max" })
     expect(parsed["multimodal-looker"]).toEqual({ model: "gemini-3-flash" })
   })
+
+  it("supports single-quoted object keys", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  'multimodal-looker': {
+    fallbackChain: [
+      { providers: ["google"], model: "gemini-3-flash" },
+    ],
+  },
+}
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+`
+
+    const parsed = parseUpstreamAgentRequirements(source)
+    expect(parsed["multimodal-looker"]).toEqual({ model: "gemini-3-flash" })
+  })
+
+  it("throws contextual error when braces cannot be matched", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  sisyphus: {
+    fallbackChain: [
+      { providers: ["anthropic"], model: "claude-opus-4-6", variant: "max" },
+    ],
+  }
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+`
+
+    expect(() => parseUpstreamAgentRequirements(source)).toThrow(
+      "Failed to match closing brace for object starting at index",
+    )
+  })
 })
 
 describe("buildExpectedAgentDefaults", () => {

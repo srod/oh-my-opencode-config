@@ -26,6 +26,21 @@ type SyncMode = "check" | "apply"
 
 type LatestRelease = z.infer<typeof LatestReleaseSchema>
 
+export function getGitHubApiHeaders(env: {
+  readonly [key: string]: string | undefined
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  }
+
+  const token = env.GITHUB_TOKEN?.trim()
+  if (token !== undefined && token.length > 0) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  return headers
+}
+
 function parseMode(args: string[]): { mode: SyncMode; dryRun: boolean } {
   const hasCheck = args.includes("--check")
   const hasApply = args.includes("--apply")
@@ -47,9 +62,7 @@ function parseMode(args: string[]): { mode: SyncMode; dryRun: boolean } {
 
 async function fetchLatestRelease(): Promise<LatestRelease> {
   const response = await fetch(RELEASE_API_URL, {
-    headers: {
-      Accept: "application/vnd.github+json",
-    },
+    headers: getGitHubApiHeaders(Bun.env),
   })
 
   if (!response.ok) {
@@ -150,8 +163,10 @@ async function run(): Promise<void> {
   }
 }
 
-run().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error)
-  printError(message)
-  process.exitCode = 1
-})
+if (import.meta.main) {
+  run().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error)
+    printError(message)
+    process.exitCode = 1
+  })
+}

@@ -33,15 +33,7 @@ export async function atomicWrite(filePath: string, content: string): Promise<vo
 
 async function resolveWritePath(filePath: string): Promise<string> {
   try {
-    const stats = await fs.lstat(filePath)
-    if (!stats.isSymbolicLink()) {
-      return filePath
-    }
-
-    const symlinkTarget = await fs.readlink(filePath)
-    return path.isAbsolute(symlinkTarget)
-      ? symlinkTarget
-      : path.resolve(path.dirname(filePath), symlinkTarget)
+    return await fs.realpath(filePath)
   } catch (error) {
     if (isErrnoException(error) && error.code === "ENOENT") {
       return filePath
