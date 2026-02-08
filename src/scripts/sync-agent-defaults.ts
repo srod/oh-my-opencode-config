@@ -26,6 +26,12 @@ type SyncMode = "check" | "apply"
 
 type LatestRelease = z.infer<typeof LatestReleaseSchema>
 
+/**
+ * Build HTTP headers for requests to the GitHub API, adding an Authorization bearer token when present.
+ *
+ * @param env - Environment key/value map used to read `GITHUB_TOKEN`
+ * @returns A map of HTTP headers including `Accept: application/vnd.github+json` and, if `GITHUB_TOKEN` is non-empty, `Authorization: Bearer <token>`
+ */
 export function getGitHubApiHeaders(env: {
   readonly [key: string]: string | undefined
 }): Record<string, string> {
@@ -41,6 +47,14 @@ export function getGitHubApiHeaders(env: {
   return headers
 }
 
+/**
+ * Parse CLI arguments to determine the sync mode and whether the run is a dry run.
+ *
+ * @param args - The command-line arguments to parse (e.g., process.argv.slice(...))
+ * @returns An object with `mode` set to `"check"` or `"apply"`, and `dryRun` set to `true` if `--dry-run` was provided, `false` otherwise.
+ * @throws If neither or both `--check` and `--apply` are provided.
+ * @throws If `--dry-run` is provided without `--apply`.
+ */
 function parseMode(args: string[]): { mode: SyncMode; dryRun: boolean } {
   const hasCheck = args.includes("--check")
   const hasApply = args.includes("--apply")
@@ -60,6 +74,12 @@ function parseMode(args: string[]): { mode: SyncMode; dryRun: boolean } {
   }
 }
 
+/**
+ * Fetches the latest GitHub release for the repository and validates the response against the release schema.
+ *
+ * @returns The validated release object parsed by `LatestReleaseSchema`.
+ * @throws Error if the GitHub API request returns a non-OK HTTP response.
+ */
 async function fetchLatestRelease(): Promise<LatestRelease> {
   const response = await fetch(RELEASE_API_URL, {
     headers: getGitHubApiHeaders(Bun.env),
@@ -73,6 +93,13 @@ async function fetchLatestRelease(): Promise<LatestRelease> {
   return LatestReleaseSchema.parse(json)
 }
 
+/**
+ * Retrieve the upstream model requirements source file for a given release tag.
+ *
+ * @param tag - The GitHub release tag (for example, `v1.2.3`) to fetch the file from
+ * @returns The raw TypeScript source text of the upstream `model-requirements.ts` file
+ * @throws Error if the HTTP request returns a non-OK response
+ */
 async function fetchUpstreamRequirements(tag: string): Promise<string> {
   const url = `${RAW_BASE_URL}/${tag}/src/shared/model-requirements.ts`
   const response = await fetch(url)
@@ -82,6 +109,12 @@ async function fetchUpstreamRequirements(tag: string): Promise<string> {
   return response.text()
 }
 
+/**
+ * Format a model configuration into a single-line label.
+ *
+ * @param config - Object containing the model name and an optional variant
+ * @returns The model name when `variant` is not provided, otherwise `model [variant]`
+ */
 function formatConfig(config: { model: string; variant?: string }): string {
   if (config.variant === undefined) {
     return config.model
@@ -89,6 +122,20 @@ function formatConfig(config: { model: string; variant?: string }): string {
   return `${config.model} [${config.variant}]`
 }
 
+/**
+ * Synchronizes local agent default configurations with upstream requirements.
+ *
+ * Performs a full sync workflow: determines CLI mode (`--check` or `--apply`), fetches the latest upstream release and requirements, computes expected defaults and diffs against the current defaults file, and either reports drift or updates the defaults file.
+ *
+ * Behavior details:
+ * - In `--check` mode: prints sync status and per-agent diffs when drift is detected, and sets `process.exitCode = 1` on drift.
+ * - In `--apply` mode: writes the updated defaults file unless `--dry-run` is specified (in which case it only prints what would change).
+ * - Throws an Error if upstream parsing yields zero agents or if `DEFAULT_CONFIG.agents` is missing.
+ *
+ * Side effects:
+ * - May write to the filesystem (updates DEFAULTS_FILE_PATH).
+ * - Prints progress, diffs, and success/error messages to stdout/stderr.
+ */
 async function run(): Promise<void> {
   const { mode, dryRun } = parseMode(Bun.argv.slice(2))
 
