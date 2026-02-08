@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2
+
+### Patch Changes
+
+- [#11](https://github.com/srod/oh-my-opencode-config/pull/11) [`80e2a5b`](https://github.com/srod/oh-my-opencode-config/commit/80e2a5bc0911149300563a6f3cc01f30ed8e539f) Thanks [@srod](https://github.com/srod)! - Fix config writes when using profile symlinks so edits update the active profile target instead of replacing `oh-my-opencode.json`.
+  Also improve upstream sync parsing by handling single-quoted keys and adding clearer parse errors, and support authenticated GitHub API requests via `GITHUB_TOKEN`.
+
+- [#11](https://github.com/srod/oh-my-opencode-config/pull/11) [`79f78e1`](https://github.com/srod/oh-my-opencode-config/commit/79f78e1cb9d8e42b7da355ead86091e41e3d7a27) Thanks [@srod](https://github.com/srod)! - Sync default agent and category model assignments to upstream oh-my-opencode v3.4.0.
+
 ## 0.3.1
 
 ### Patch Changes

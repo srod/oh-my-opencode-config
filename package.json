@@ -1,6 +1,6 @@
 {
   "name": "oh-my-opencode-config",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Interactive CLI for managing model assignments in oh-my-opencode.json",
   "type": "module",
   "imports": {
