@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Minor Changes
+
+- [#15](https://github.com/srod/oh-my-opencode-config/pull/15) [`91e4f20`](https://github.com/srod/oh-my-opencode-config/commit/91e4f200c5b7f179fc27e21bc969409307be8f27) Thanks [@srod](https://github.com/srod)! - Add a cached CLI update notifier with startup banner, opt-out controls, and background refresh behavior for version checks.
+
 ## 0.3.2
 
 ### Patch Changes
