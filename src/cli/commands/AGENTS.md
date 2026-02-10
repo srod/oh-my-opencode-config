@@ -32,9 +32,19 @@ Options use `Pick<BaseCommandOptions, ...>` — never the full interface.
 | User prompts | `@clack/prompts`: `select`, `input`, `confirm`, `isCancel` |
 | Config path | `resolveConfigPath(options.config)` from `#config/resolve.js` |
 
+## Notable Files
+
+| File | Lines | Notes |
+|------|-------|-------|
+| `doctor.ts` | 719 | Largest command. Validates cache age, model capabilities, defunct agents, npm updates |
+| `configure.ts` | 331 | Multi-step PROVIDER→MODEL→VARIANT state machine with back navigation |
+| `profile.ts` | 410 | 6 subcommands (save/use/list/delete/rename/template) |
+| `test-mocks.ts` | 178 | Central mock registry shared by all command tests |
+| `quick-setup.ts` | — | Apply Standard/Economy preset profiles |
+
 ## Shared Helpers in `configure.ts`
 
-`configure.ts` has two private helpers used by both `configureAgentsCommand` and `configureCategoriesCommand`:
+`configure.ts` has private helpers used by both `configureAgentsCommand` and `configureCategoriesCommand`:
 
 | Helper | Purpose |
 |--------|---------|

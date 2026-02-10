@@ -10,4 +10,5 @@ export interface BaseCommandOptions {
   dryRun?: boolean
   refresh?: boolean
   template?: string
+  updateNotifier?: boolean
 }

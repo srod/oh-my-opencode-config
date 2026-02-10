@@ -159,5 +159,6 @@ export async function showHelpCommand(): Promise<void> {
   printLine("  --json                  Output as JSON")
   printLine("  --verbose               Detailed logging")
   printLine("  --dry-run               Preview without applying")
+  printLine("  --no-update-notifier    Disable automatic CLI update notifications")
   printLine("")
 }

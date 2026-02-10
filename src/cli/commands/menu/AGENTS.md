@@ -1,18 +1,18 @@
 # Interactive Menu Module
 
-Orchestrator for TUI-based configuration via `@clack/prompts`.
+Orchestrator for TUI-based configuration via `@clack/prompts`. 8 source files, ~2000 lines.
 
 ## Structure
 
 ```text
 menu/
-├── index.ts      # Main loop + action dispatch (21 actions)
-├── configure.ts  # Multi-step wizard (PROVIDER→MODEL→VARIANT)
-├── history.ts    # Backup diff analysis + undo
-├── profile.ts    # Profile CRUD
+├── index.ts      # Main loop + action dispatch (21 actions, 382 lines)
+├── configure.ts  # Multi-step wizard PROVIDER→MODEL→VARIANT (427 lines, largest)
+├── history.ts    # Backup diff analysis + undo (210 lines)
+├── profile.ts    # Profile CRUD (227 lines)
 ├── io.ts         # Import/export with Zod validation
 ├── status.ts     # Diagnostic display
-├── misc.ts       # Refresh, reset, backup restore, help
+├── misc.ts       # Refresh, reset, backup restore, help (164 lines)
 └── utils.ts      # Shared validation helpers
 ```
 
@@ -70,5 +70,6 @@ if (isCancel(result) || typeof result === "symbol") {
 ## Notes
 
 - **No tests yet** — co-located `*.test.ts` files should be added
-- `configure.ts` has 90% duplication between agents/categories (intentional — different iteration patterns)
+- `configure.ts` has 90% duplication between agents/categories flow (intentional — different iteration patterns and agent vs category specific logic)
 - Main loop catches errors, prints red, continues (no crash)
+- `index.ts` dispatch uses 21-case switch (not a map) — intentional for readability
