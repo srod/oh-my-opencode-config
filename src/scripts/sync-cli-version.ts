@@ -7,9 +7,10 @@ import { printError, printLine, printSuccess } from "#utils/output.js"
 
 const PACKAGE_JSON_PATH = fileURLToPath(new URL("../../package.json", import.meta.url))
 const CLI_VERSION_FILE_PATH = fileURLToPath(new URL("../cli/version.ts", import.meta.url))
+const SAFE_PACKAGE_VERSION_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u
 
 const PackageJsonVersionSchema = z.object({
-  version: z.string().trim().min(1),
+  version: z.string().trim().regex(SAFE_PACKAGE_VERSION_RE),
 })
 
 export interface SyncCliVersionOptions {
@@ -27,19 +28,20 @@ function buildVersionFileContent(version: string): string {
 }
 
 function parsePackageVersion(rawPackageJson: string): string {
+  let parsed: unknown
+
   try {
-    const parsed: unknown = JSON.parse(rawPackageJson)
-    const result = PackageJsonVersionSchema.safeParse(parsed)
-    if (!result.success) {
-      throw new Error("package.json version is missing or invalid")
-    }
-    return result.data.version
-  } catch (error) {
-    if (error instanceof Error && error.message === "package.json version is missing or invalid") {
-      throw error
-    }
+    parsed = JSON.parse(rawPackageJson)
+  } catch {
     throw new Error("package.json version is missing or invalid")
   }
+
+  const result = PackageJsonVersionSchema.safeParse(parsed)
+  if (!result.success) {
+    throw new Error("package.json version is missing or invalid")
+  }
+
+  return result.data.version
 }
 
 async function readVersionFile(filePath: string): Promise<string> {

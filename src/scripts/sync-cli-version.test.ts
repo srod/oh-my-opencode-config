@@ -47,4 +47,15 @@ describe("syncCliVersion", () => {
       "package.json version is missing or invalid",
     )
   })
+
+  test("throws when package.json version contains unsafe characters", async () => {
+    await Bun.write(
+      packageJsonPath,
+      JSON.stringify({ name: "example", version: '1.2.3"\nconsole.log("injected")' }),
+    )
+
+    await expect(syncCliVersion({ packageJsonPath, versionFilePath })).rejects.toThrow(
+      "package.json version is missing or invalid",
+    )
+  })
 })
