@@ -242,17 +242,25 @@ async function getLatestNpmVersion(packageName: string): Promise<NpmRegistryResu
   }
 }
 
+export async function checkSingleNpmUpdate(
+  packageName: string,
+  currentVersion: string | null,
+): Promise<NpmUpdateStatus> {
+  const latest = await getLatestNpmVersion(packageName)
+  return buildUpdateStatus(currentVersion, latest)
+}
+
 export async function checkNpmUpdates(versions: {
   opencode: string | null
   ohMyOpencode: string | null
 }): Promise<NpmUpdateReport> {
-  const [opencodeLatest, ohMyOpencodeLatest] = await Promise.all([
-    getLatestNpmVersion("opencode-ai"),
-    getLatestNpmVersion("oh-my-opencode"),
+  const [opencode, ohMyOpencode] = await Promise.all([
+    checkSingleNpmUpdate("opencode-ai", versions.opencode),
+    checkSingleNpmUpdate("oh-my-opencode", versions.ohMyOpencode),
   ])
 
   return {
-    opencode: buildUpdateStatus(versions.opencode, opencodeLatest),
-    ohMyOpencode: buildUpdateStatus(versions.ohMyOpencode, ohMyOpencodeLatest),
+    opencode,
+    ohMyOpencode,
   }
 }

@@ -54,6 +54,11 @@
       "source": "./src/types/*",
       "default": "./dist/types/*"
     },
+    "#update/*": {
+      "types": "./src/update/*",
+      "source": "./src/update/*",
+      "default": "./dist/update/*"
+    },
     "#utils/*": {
       "types": "./src/utils/*",
       "source": "./src/utils/*",

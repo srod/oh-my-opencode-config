@@ -22,13 +22,15 @@ import { refreshCommand } from "#cli/commands/refresh.js"
 import { resetCommand } from "#cli/commands/reset.js"
 import { statusCommand } from "#cli/commands/status.js"
 import { undoCommand } from "#cli/commands/undo.js"
+import { CLI_VERSION } from "#cli/version.js"
+import { maybeNotifyCliUpdate } from "#update/notifier.js"
 
 export const program = new Command()
 
 program
   .name("oh-my-opencode-config")
   .description("Interactive CLI for managing model assignments in oh-my-opencode.json")
-  .version("0.2.0")
+  .version(CLI_VERSION)
 
 program
   .option("--config <path>", "Override oh-my-opencode.json path")
@@ -38,6 +40,22 @@ program
   .option("--verbose", "Detailed logging")
   .option("--dry-run", "Preview without applying")
   .option("--template <path>", "Override profile template path")
+  .option("--no-update-notifier", "Disable automatic CLI update notifications")
+
+let pendingUpdateRefresh: Promise<void> | null = null
+
+program.hook("preAction", async () => {
+  const options = program.opts()
+  const result = await maybeNotifyCliUpdate(options)
+  pendingUpdateRefresh = result.pendingRefresh
+})
+
+program.hook("postAction", async () => {
+  if (pendingUpdateRefresh) {
+    await pendingUpdateRefresh
+    pendingUpdateRefresh = null
+  }
+})
 
 program
   .command("list")
