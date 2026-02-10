@@ -1,17 +1,18 @@
 # Config Management
 
-Core configuration handling: discovery, loading, resolution, writing.
+Core configuration handling: discovery, loading, resolution, writing, upstream sync.
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `resolve.ts` | `resolveConfigPath(option?)` — single entry point for config path resolution. Uses `\|\|` semantics (empty strings fall through). **All commands use this.** |
-| `discover.ts` | Find config: project `.opencode/` → `~/.config/opencode/`. Called by `resolve.ts`. |
-| `loader.ts` | Read + Zod validate → typed `Config`. Returns `DEFAULT_CONFIG` if file missing. |
-| `writer.ts` | Atomic writes (temp + rename), concurrent modification detection via mtime |
-| `defaults.ts` | Default model assignments (synced from oh-my-opencode repo) |
-| `paths.ts` | Path constants (`USER_CONFIG_FULL_PATH`, `PROJECT_CONFIG_REL_PATH`, `MODELS_CACHE_PATH`) |
+| File | Lines | Purpose |
+|------|-------|---------|
+| `resolve.ts` | 17 | `resolveConfigPath(option?)` — single entry point for config path resolution. Uses `\|\|` semantics (empty strings fall through). **All commands use this.** |
+| `discover.ts` | 37 | Find config: project `.opencode/` → `~/.config/opencode/`. Called by `resolve.ts`. |
+| `loader.ts` | 38 | Read + Zod validate → typed `Config`. Returns `DEFAULT_CONFIG` if file missing. |
+| `writer.ts` | 34 | Atomic writes (temp + rename), concurrent modification detection via mtime |
+| `defaults.ts` | 35 | Default model assignments (synced from oh-my-opencode repo via upstream-agent-sync) |
+| `paths.ts` | 37 | Path constants (`USER_CONFIG_FULL_PATH`, `PROJECT_CONFIG_REL_PATH`, `MODELS_CACHE_PATH`, `AVAILABLE_MODELS_CACHE_*`, `UPDATE_NOTIFIER_CACHE_*`) |
+| `upstream-agent-sync.ts` | 434 | **Complex**: Parses upstream TypeScript source to extract agent model requirements. Hand-rolled parser (brace matching, string escaping, JS object key parsing). Used by sync script. |
 
 ## Config Path Resolution
 
@@ -52,6 +53,19 @@ await fs.rename(tmpPath, filePath)
 - Test concurrent modification detection
 - Test atomic write integrity
 - `resolve.test.ts`: 6 tests for path resolution logic
+
+## Upstream Sync (`upstream-agent-sync.ts`)
+
+Parses the oh-my-opencode repo's `model-requirements.ts` to extract default model assignments. Uses a hand-rolled JS object parser (NOT eval/Function):
+
+| Function | Purpose |
+|----------|---------|
+| `parseUpstreamAgentRequirements(source)` | Main entry: extract agent→model map from upstream TS source |
+| `buildExpectedAgentDefaults(current, upstream)` | Merge upstream models with current provider prefixes |
+| `diffAgentDefaults(current, expected)` | Compare current vs expected, return diffs |
+| `applyAgentDefaultsToDefaultsFile(content, agents, tag, date)` | Rewrite `defaults.ts` with new agent block + metadata |
+
+Invoked via `src/scripts/sync-agent-defaults.ts` (CLI script).
 
 ## Anti-Patterns
 
