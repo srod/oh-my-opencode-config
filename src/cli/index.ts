@@ -42,18 +42,15 @@ program
   .option("--template <path>", "Override profile template path")
   .option("--no-update-notifier", "Disable automatic CLI update notifications")
 
-let pendingUpdateRefresh: Promise<void> | null = null
-
 program.hook("preAction", async () => {
-  const options = program.opts()
-  const result = await maybeNotifyCliUpdate(options)
-  pendingUpdateRefresh = result.pendingRefresh
-})
-
-program.hook("postAction", async () => {
-  if (pendingUpdateRefresh) {
-    await pendingUpdateRefresh
-    pendingUpdateRefresh = null
+  try {
+    const options = program.opts()
+    const result = await maybeNotifyCliUpdate(options)
+    if (result.pendingRefresh) {
+      void result.pendingRefresh.catch(() => {})
+    }
+  } catch {
+    // best-effort notifier; ignore hook failures
   }
 })
 

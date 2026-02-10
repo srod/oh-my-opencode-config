@@ -9,6 +9,7 @@ import { checkSingleNpmUpdate } from "#utils/npm.js"
 import { printLine } from "#utils/output.js"
 
 const UPDATE_PACKAGE_NAME = "oh-my-opencode-config"
+const SAFE_SEMVER_RE = /^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u
 
 const UpdateNotifierCacheSchema = z.object({
   checkedAt: z.number(),
@@ -107,10 +108,12 @@ function printUpdateAvailable(
   currentVersion: string,
   latest: string,
 ): void {
+  const displayLatest = SAFE_SEMVER_RE.test(latest.trim()) ? latest.trim() : "[untrusted version]"
+
   print(chalk.yellow("┏━ 🚀 Update Available ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
   print(
     chalk.yellow(
-      `┃ ${chalk.bold(UPDATE_PACKAGE_NAME)} ${chalk.dim(`${currentVersion} -> ${latest}`)}`,
+      `┃ ${chalk.bold(UPDATE_PACKAGE_NAME)} ${chalk.dim(`${currentVersion} -> ${displayLatest}`)}`,
     ),
   )
   print(chalk.yellow(`┃ ${chalk.cyan("Run:")} ${chalk.bold("npm i -g oh-my-opencode-config")}`))

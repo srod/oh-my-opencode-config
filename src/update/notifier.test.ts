@@ -359,6 +359,24 @@ describe("maybeNotifyCliUpdate", () => {
     expect(print.mock.calls[1]?.[0]).toContain(`${TEST_CLI_VERSION} -> 2.0.0`)
   })
 
+  test("sanitizes untrusted latest version before printing", async () => {
+    await writeCache({
+      checkedAt: nowMs,
+      currentVersion: TEST_CLI_VERSION,
+      latest: "2.0.0\u001b[2J\u001b[H",
+      updateAvailable: true,
+      error: null,
+      notifiedVersion: null,
+    })
+
+    const result = await maybeNotifyCliUpdate({}, defaultOverrides())
+
+    expect(result.pendingRefresh).toBeNull()
+    expect(checkUpdate).not.toHaveBeenCalled()
+    expect(print).toHaveBeenCalledTimes(5)
+    expect(print.mock.calls[1]?.[0]).toContain(`${TEST_CLI_VERSION} -> [untrusted version]`)
+  })
+
   test("ignores invalid cache content and refreshes in background", async () => {
     await Bun.write(cachePath, "not-json")
     checkUpdate.mockResolvedValueOnce({
