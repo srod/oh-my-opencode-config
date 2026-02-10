@@ -23,10 +23,23 @@ export interface SyncCliVersionResult {
   version: string
 }
 
+/**
+ * Build the TypeScript file content that exports the CLI_VERSION constant set to the provided version.
+ *
+ * @param version - The semantic version string to embed as `CLI_VERSION`
+ * @returns The file text: a single-line `export const CLI_VERSION = "<version>"` followed by a newline
+ */
 function buildVersionFileContent(version: string): string {
   return `export const CLI_VERSION = "${version}"\n`
 }
 
+/**
+ * Extracts and validates the `version` field from a package.json string.
+ *
+ * @param rawPackageJson - The raw JSON text of a package.json file
+ * @returns The validated `version` string from the package.json
+ * @throws Error if the JSON is invalid or the `version` field is missing or does not match the expected format
+ */
 function parsePackageVersion(rawPackageJson: string): string {
   let parsed: unknown
 
@@ -44,6 +57,12 @@ function parsePackageVersion(rawPackageJson: string): string {
   return result.data.version
 }
 
+/**
+ * Read the text contents of the specified version file, or return an empty string if the file does not exist.
+ *
+ * @param filePath - Path to the version file to read
+ * @returns The file contents as a string, or an empty string when the file is missing
+ */
 async function readVersionFile(filePath: string): Promise<string> {
   const file = Bun.file(filePath)
   if (!(await file.exists())) {
@@ -52,6 +71,15 @@ async function readVersionFile(filePath: string): Promise<string> {
   return file.text()
 }
 
+/**
+ * Syncs the CLI version file with the `version` field from package.json.
+ *
+ * @param options - Optional overrides for file paths.
+ *   - `packageJsonPath`: Path to package.json (defaults to the repository package.json).
+ *   - `versionFilePath`: Path to the target version file to write (defaults to the CLI version file path).
+ * @returns An object with `updated`: `true` if the version file was written because its content changed, `false` if it was already up to date; and `version`: the synchronized version string.
+ * @throws If package.json is missing or contains an invalid or missing `version`, or if file system operations fail.
+ */
 export async function syncCliVersion(
   options: SyncCliVersionOptions = {},
 ): Promise<SyncCliVersionResult> {
@@ -71,6 +99,11 @@ export async function syncCliVersion(
   return { updated: true, version }
 }
 
+/**
+ * Synchronizes the repository CLI version file with package.json and prints the result.
+ *
+ * Prints a success message when the version file was updated, or an informational line when it was already up to date.
+ */
 async function run(): Promise<void> {
   const result = await syncCliVersion()
   if (result.updated) {
