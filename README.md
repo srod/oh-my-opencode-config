@@ -35,6 +35,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 | `configure agents` | Assign models to agents |
 | `configure categories` | Assign models to categories |
 | `configure quick-setup` | Apply Standard or Economy presets |
+| `reset` | Reset to default model assignments |
 | `diff` | Show changes from defaults |
 | `doctor` | Diagnose issues (`--fix` repairs cache) |
 | `backup list` | List backups |
@@ -56,6 +57,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 - `--verbose` Include detailed logs and stack traces.
 - `--dry-run` Preview changes without writing.
 - `--template <path>` Override the profile template path used by `profile save`.
+- `--no-update-notifier` Disable automatic CLI update checks at startup.
 
 ## Configuration files
 
