@@ -112,8 +112,9 @@
     "typecheck": "tsc --noEmit",
     "sync:agents:check": "bun --conditions=source src/scripts/sync-agent-defaults.ts --check",
     "sync:agents:apply": "bun --conditions=source src/scripts/sync-agent-defaults.ts --apply",
+    "sync:cli-version": "bun --conditions=source src/scripts/sync-cli-version.ts",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && bun run sync:cli-version",
     "release": "bun run build && changeset publish"
   },
   "devDependencies": {
