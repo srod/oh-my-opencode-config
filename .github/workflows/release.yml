@@ -75,7 +75,7 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: bunx changeset version && bun run sync:cli-version
+          version: "bun run version-packages"
           publish: bunx changeset publish
           title: "chore: version packages"
           commit: "chore: version packages"
