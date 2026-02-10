@@ -211,12 +211,11 @@ describe("maybeNotifyCliUpdate", () => {
     await result.pendingRefresh
 
     expect(checkUpdate).toHaveBeenCalledTimes(1)
-    const cached = JSON.parse(await Bun.file(cachePath).text()) as {
-      currentVersion: string
-      updateAvailable: boolean | null
-    }
-    expect(cached.currentVersion).toBe(TEST_CLI_VERSION)
-    expect(cached.updateAvailable).toBe(false)
+    const cached: unknown = JSON.parse(await Bun.file(cachePath).text())
+    expect(cached).toMatchObject({
+      currentVersion: TEST_CLI_VERSION,
+      updateAvailable: false,
+    })
   })
 
   test("refreshes stale cache in background without showing banner", async () => {
@@ -241,16 +240,13 @@ describe("maybeNotifyCliUpdate", () => {
     await result.pendingRefresh
 
     expect(checkUpdate).toHaveBeenCalledTimes(1)
-    const cached = JSON.parse(await Bun.file(cachePath).text()) as {
-      latest: string | null
-      updateAvailable: boolean | null
-      checkedAt: number
-      notifiedVersion: string | null
-    }
-    expect(cached.latest).toBe("2.0.0")
-    expect(cached.updateAvailable).toBe(true)
-    expect(cached.checkedAt).toBe(nowMs)
-    expect(cached.notifiedVersion).toBeNull()
+    const cached: unknown = JSON.parse(await Bun.file(cachePath).text())
+    expect(cached).toMatchObject({
+      latest: "2.0.0",
+      updateAvailable: true,
+      checkedAt: nowMs,
+      notifiedVersion: null,
+    })
   })
 
   test("shows banner on next run after background refresh finds update", async () => {
