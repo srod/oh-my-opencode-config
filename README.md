@@ -13,6 +13,30 @@ curl -fsSL https://bun.sh/install | bash
 bun add -g oh-my-opencode-config
 ```
 
+## Run with bunx (no global install)
+
+You can run the published CLI directly from npm with `bunx`:
+
+```bash
+bunx oh-my-opencode-config
+```
+
+With arguments:
+
+```bash
+bunx oh-my-opencode-config list
+```
+
+Switch profile:
+
+```bash
+bunx oh-my-opencode-config profile use light-work
+```
+
+```bash
+bunx oh-my-opencode-config profile use ultra-brain
+```
+
 ## Quick start
 
 ```bash
@@ -24,6 +48,8 @@ oh-my-opencode-config list
 ```
 
 Run `oh-my-opencode-config --help` for the full command list.
+
+If you use `bunx`, run `bunx oh-my-opencode-config --help`.
 
 ## Commands
 
