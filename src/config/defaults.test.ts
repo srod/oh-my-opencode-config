@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { DEFAULT_CONFIG } from "./defaults.js"
 
 describe("DEFAULT_CONFIG upstream sync", () => {
-  it("matches oh-my-opencode v3.4.0 agent defaults", () => {
+  it("matches oh-my-opencode v3.7.1 agent defaults", () => {
     expect(DEFAULT_CONFIG.agents.sisyphus).toEqual({
       model: "anthropic/claude-opus-4-6",
       variant: "max",
@@ -25,7 +25,11 @@ describe("DEFAULT_CONFIG upstream sync", () => {
     })
   })
 
-  it("matches oh-my-opencode v3.4.0 category defaults", () => {
+  it("matches oh-my-opencode v3.7.1 category defaults", () => {
+    expect(DEFAULT_CONFIG.categories["visual-engineering"]).toEqual({
+      model: "google/gemini-3-pro",
+      variant: "high",
+    })
     expect(DEFAULT_CONFIG.categories.ultrabrain).toEqual({
       model: "openai/gpt-5.3-codex",
       variant: "xhigh",
@@ -38,9 +42,18 @@ describe("DEFAULT_CONFIG upstream sync", () => {
       model: "google/gemini-3-pro",
       variant: "high",
     })
+    expect(DEFAULT_CONFIG.categories.quick).toEqual({
+      model: "anthropic/claude-haiku-4-5",
+    })
+    expect(DEFAULT_CONFIG.categories["unspecified-low"]).toEqual({
+      model: "anthropic/claude-sonnet-4-5",
+    })
     expect(DEFAULT_CONFIG.categories["unspecified-high"]).toEqual({
       model: "anthropic/claude-opus-4-6",
       variant: "max",
+    })
+    expect(DEFAULT_CONFIG.categories.writing).toEqual({
+      model: "kimi-for-coding/k2p5",
     })
   })
 })
