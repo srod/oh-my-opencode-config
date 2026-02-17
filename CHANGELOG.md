@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+### Patch Changes
+
+- [#21](https://github.com/srod/oh-my-opencode-config/pull/21) [`0bd6d23`](https://github.com/srod/oh-my-opencode-config/commit/0bd6d23797da4925b2fb5349ee0e6a64e628cdb4) Thanks [@srod](https://github.com/srod)! - Sync defaults with upstream `oh-my-opencode` v3.7.1 metadata and category assignments:
+
+  - `visual-engineering`: add variant `"high"` (previously no variant)
+  - `writing`: change default model from `google/gemini-3-flash` to `kimi-for-coding/k2p5`
+
 ## 0.4.0
 
 ### Minor Changes
