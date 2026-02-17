@@ -4,9 +4,9 @@ import type { Config } from "#types/config.js"
  * Default configuration synced with oh-my-opencode repository.
  *
  * Source of Truth:
- * https://github.com/code-yeongyu/oh-my-opencode/blob/v3.4.0/src/shared/model-requirements.ts
+ * https://github.com/code-yeongyu/oh-my-opencode/blob/v3.7.1/src/shared/model-requirements.ts
  *
- * Last Updated: Feb 2026 (v3.4.0)
+ * Last Updated: Feb 2026 (v3.7.1)
  */
 export const DEFAULT_CONFIG: Config = {
   agents: {
@@ -22,13 +22,13 @@ export const DEFAULT_CONFIG: Config = {
     atlas: { model: "kimi-for-coding/k2p5" },
   },
   categories: {
-    "visual-engineering": { model: "google/gemini-3-pro" },
+    "visual-engineering": { model: "google/gemini-3-pro", variant: "high" },
     ultrabrain: { model: "openai/gpt-5.3-codex", variant: "xhigh" },
     deep: { model: "openai/gpt-5.3-codex", variant: "medium" },
     artistry: { model: "google/gemini-3-pro", variant: "high" },
     quick: { model: "anthropic/claude-haiku-4-5" },
     "unspecified-low": { model: "anthropic/claude-sonnet-4-5" },
     "unspecified-high": { model: "anthropic/claude-opus-4-6", variant: "max" },
-    writing: { model: "google/gemini-3-flash" },
+    writing: { model: "kimi-for-coding/k2p5" },
   },
 }

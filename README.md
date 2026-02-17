@@ -13,6 +13,30 @@ curl -fsSL https://bun.sh/install | bash
 bun add -g oh-my-opencode-config
 ```
 
+## Run with bunx (no global install)
+
+You can run the published CLI directly from npm with `bunx`:
+
+```bash
+bunx oh-my-opencode-config
+```
+
+With arguments:
+
+```bash
+bunx oh-my-opencode-config list
+```
+
+Switch profile:
+
+```bash
+bunx oh-my-opencode-config profile use light-work
+```
+
+```bash
+bunx oh-my-opencode-config profile use ultra-brain
+```
+
 ## Quick start
 
 ```bash
@@ -25,6 +49,8 @@ oh-my-opencode-config list
 
 Run `oh-my-opencode-config --help` for the full command list.
 
+If you use `bunx`, run `bunx oh-my-opencode-config --help`.
+
 ## Commands
 
 | Command | What it does |
@@ -35,6 +61,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 | `configure agents` | Assign models to agents |
 | `configure categories` | Assign models to categories |
 | `configure quick-setup` | Apply Standard or Economy presets |
+| `reset` | Reset to default model assignments |
 | `diff` | Show changes from defaults |
 | `doctor` | Diagnose issues (`--fix` repairs cache) |
 | `backup list` | List backups |
@@ -56,6 +83,7 @@ Run `oh-my-opencode-config --help` for the full command list.
 - `--verbose` Include detailed logs and stack traces.
 - `--dry-run` Preview changes without writing.
 - `--template <path>` Override the profile template path used by `profile save`.
+- `--no-update-notifier` Disable automatic CLI update checks at startup.
 
 ## Configuration files
 
