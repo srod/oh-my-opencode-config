@@ -42,6 +42,12 @@ describe("DEFAULT_CONFIG upstream sync", () => {
       model: "google/gemini-3-pro",
       variant: "high",
     })
+    expect(DEFAULT_CONFIG.categories.quick).toEqual({
+      model: "anthropic/claude-haiku-4-5",
+    })
+    expect(DEFAULT_CONFIG.categories["unspecified-low"]).toEqual({
+      model: "anthropic/claude-sonnet-4-5",
+    })
     expect(DEFAULT_CONFIG.categories["unspecified-high"]).toEqual({
       model: "anthropic/claude-opus-4-6",
       variant: "max",
