@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 import chalk from "chalk"
 import { z } from "zod"
 import { DEFAULT_CONFIG } from "#config/defaults.js"
+import type { AgentDefaultDiff, CategoryDefaultDiff } from "#config/upstream-agent-sync.js"
 import {
   applyAgentDefaultsToDefaultsFile,
   buildExpectedAgentDefaults,
@@ -126,6 +127,28 @@ function formatConfig(config: { model: string; variant?: string }): string {
 }
 
 /**
+ * Print diff lines for both agent and category defaults.
+ *
+ * @param agentDiffs - Differences between current and expected agent defaults
+ * @param categoryDiffs - Differences between current and expected category defaults
+ */
+function printDiffLines(
+  agentDiffs: AgentDefaultDiff[],
+  categoryDiffs: CategoryDefaultDiff[],
+): void {
+  for (const diff of agentDiffs) {
+    printLine(
+      `  ${chalk.yellow("•")} ${chalk.bold(`[agent] ${diff.agent}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
+    )
+  }
+  for (const diff of categoryDiffs) {
+    printLine(
+      `  ${chalk.yellow("•")} ${chalk.bold(`[category] ${diff.category}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
+    )
+  }
+}
+
+/**
  * Synchronizes local agent and category default configurations with upstream requirements.
  *
  * Performs a full sync workflow: determines CLI mode (`--check` or `--apply`), fetches the latest upstream release and requirements, computes expected defaults and diffs against the current defaults file, and either reports drift or updates the defaults file.
@@ -190,16 +213,7 @@ async function run(): Promise<void> {
 
     printError(`Defaults drift detected vs upstream ${tag}.`)
     if (totalDiffs > 0) {
-      for (const diff of agentDiffs) {
-        printLine(
-          `  ${chalk.yellow("•")} ${chalk.bold(`[agent] ${diff.agent}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-        )
-      }
-      for (const diff of categoryDiffs) {
-        printLine(
-          `  ${chalk.yellow("•")} ${chalk.bold(`[category] ${diff.category}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-        )
-      }
+      printDiffLines(agentDiffs, categoryDiffs)
     } else {
       printLine(`  ${chalk.yellow("•")} Defaults match, but sync metadata in defaults.ts is stale.`)
     }
@@ -222,16 +236,7 @@ async function run(): Promise<void> {
 
   if (totalDiffs > 0) {
     printLine(chalk.dim(`Updated ${totalDiffs} default${totalDiffs === 1 ? "" : "s"}:`))
-    for (const diff of agentDiffs) {
-      printLine(
-        `  ${chalk.yellow("•")} ${chalk.bold(`[agent] ${diff.agent}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-      )
-    }
-    for (const diff of categoryDiffs) {
-      printLine(
-        `  ${chalk.yellow("•")} ${chalk.bold(`[category] ${diff.category}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-      )
-    }
+    printDiffLines(agentDiffs, categoryDiffs)
   } else {
     printLine(chalk.dim("Updated sync metadata only."))
   }

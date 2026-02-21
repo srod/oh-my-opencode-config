@@ -522,6 +522,29 @@ function replaceDefaultsBlock(
 }
 
 /**
+ * Replace a required metadata line in defaults.ts content.
+ *
+ * @param defaultsFileContent - The current defaults file content
+ * @param pattern - Regex pattern used to find the metadata line
+ * @param replacement - Replacement string for the matched line
+ * @param markerName - Human-readable marker name for error reporting
+ * @returns Updated defaults content with the metadata line replaced
+ * @throws Error if the metadata marker cannot be found
+ */
+function replaceRequiredMetadata(
+  defaultsFileContent: string,
+  pattern: RegExp,
+  replacement: string,
+  markerName: string,
+): string {
+  if (defaultsFileContent.match(pattern) === null) {
+    throw new Error(`Could not find ${markerName} in defaults.ts`)
+  }
+
+  return defaultsFileContent.replace(pattern, replacement)
+}
+
+/**
  * Replace synced defaults blocks and version metadata in a defaults file.
  *
  * @param defaultsFileContent - The original defaults file content to modify.
@@ -546,14 +569,18 @@ export function applyAgentDefaultsToDefaultsFile(
     updated = replaceDefaultsBlock(updated, "categories", categoriesBlock)
   }
 
-  updated = updated.replace(
+  updated = replaceRequiredMetadata(
+    updated,
     /\* https:\/\/github\.com\/code-yeongyu\/oh-my-opencode\/blob\/[^\s]+\/src\/shared\/model-requirements\.ts/,
     `* https://github.com/code-yeongyu/oh-my-opencode/blob/${upstreamTag}/src/shared/model-requirements.ts`,
+    "source-of-truth metadata",
   )
 
-  updated = updated.replace(
+  updated = replaceRequiredMetadata(
+    updated,
     /\* Last Updated: .*$/m,
     `* Last Updated: ${formatMonthYear(now)} (${upstreamTag})`,
+    "last-updated metadata",
   )
 
   return updated

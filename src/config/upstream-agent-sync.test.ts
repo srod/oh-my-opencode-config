@@ -251,4 +251,54 @@ export const DEFAULT_CONFIG: Config = {
     expect(updated).toContain('writing: { model: "google/gemini-3-flash" },')
     expect(updated).toContain('"unspecified-low": { model: "anthropic/claude-sonnet-4-6" },')
   })
+
+  it("throws when source-of-truth metadata marker is missing", () => {
+    const content = `export const DEFAULT_CONFIG = {
+  agents: {
+    atlas: { model: "kimi-for-coding/k2p5" },
+  },
+  categories: {
+    writing: { model: "kimi-for-coding/k2p5" },
+  },
+}
+`
+
+    expect(() =>
+      applyAgentDefaultsToDefaultsFile(
+        content,
+        {
+          atlas: { model: "kimi-for-coding/kimi-k2.5-free" },
+        },
+        "v3.8.0",
+        new Date("2026-02-21T12:00:00Z"),
+      ),
+    ).toThrow("Could not find source-of-truth metadata in defaults.ts")
+  })
+
+  it("throws when last-updated metadata marker is missing", () => {
+    const content = `/**
+ * Source of Truth:
+ * https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts
+ */
+export const DEFAULT_CONFIG = {
+  agents: {
+    atlas: { model: "kimi-for-coding/k2p5" },
+  },
+  categories: {
+    writing: { model: "kimi-for-coding/k2p5" },
+  },
+}
+`
+
+    expect(() =>
+      applyAgentDefaultsToDefaultsFile(
+        content,
+        {
+          atlas: { model: "kimi-for-coding/kimi-k2.5-free" },
+        },
+        "v3.8.0",
+        new Date("2026-02-21T12:00:00Z"),
+      ),
+    ).toThrow("Could not find last-updated metadata in defaults.ts")
+  })
 })
