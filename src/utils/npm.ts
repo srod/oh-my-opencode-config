@@ -22,6 +22,7 @@ export interface NpmUpdateStatus {
 export interface NpmUpdateReport {
   opencode: NpmUpdateStatus
   ohMyOpencode: NpmUpdateStatus
+  ohMyOpencodeConfig: NpmUpdateStatus
 }
 
 interface NpmRegistryResult {
@@ -253,14 +254,17 @@ export async function checkSingleNpmUpdate(
 export async function checkNpmUpdates(versions: {
   opencode: string | null
   ohMyOpencode: string | null
+  ohMyOpencodeConfig: string | null
 }): Promise<NpmUpdateReport> {
-  const [opencode, ohMyOpencode] = await Promise.all([
+  const [opencode, ohMyOpencode, ohMyOpencodeConfig] = await Promise.all([
     checkSingleNpmUpdate("opencode-ai", versions.opencode),
     checkSingleNpmUpdate("oh-my-opencode", versions.ohMyOpencode),
+    checkSingleNpmUpdate("oh-my-opencode-config", versions.ohMyOpencodeConfig),
   ])
 
   return {
     opencode,
     ohMyOpencode,
+    ohMyOpencodeConfig,
   }
 }

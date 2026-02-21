@@ -51,10 +51,19 @@ interface DiagnosticReport {
   healthy: boolean
   issues: Issue[]
   stats: { errors: number; warnings: number; info: number }
-  versions: { opencode: string | null; ohMyOpencode: string | null }
+  versions: {
+    opencode: string | null
+    ohMyOpencode: string | null
+    ohMyOpencodeConfig: string | null
+  }
   updates: {
     opencode: { latest: string | null; updateAvailable: boolean | null; error: string | null }
     ohMyOpencode: { latest: string | null; updateAvailable: boolean | null; error: string | null }
+    ohMyOpencodeConfig: {
+      latest: string | null
+      updateAvailable: boolean | null
+      error: string | null
+    }
   }
   summary: {
     agentsConfigured: number
@@ -300,6 +309,14 @@ describe("doctorCommand", () => {
 
       const report = getJsonReport()
       expect(report.versions.ohMyOpencode).not.toBeUndefined()
+    })
+
+    test("includes oh-my-opencode-config version field", async () => {
+      await runDoctor({ json: true })
+
+      const report = getJsonReport()
+      expect(report.versions.ohMyOpencodeConfig).not.toBeUndefined()
+      expect(report.updates.ohMyOpencodeConfig).not.toBeUndefined()
     })
 
     test("text mode calls intro/outro", async () => {

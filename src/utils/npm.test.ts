@@ -15,11 +15,15 @@ describe("checkNpmUpdates", () => {
     const report = await checkNpmUpdates({
       opencode: "1.0.0",
       ohMyOpencode: "1.0.0",
+      ohMyOpencodeConfig: "1.0.0",
     })
 
     expect(report.opencode.latest).toBeNull()
     expect(report.opencode.updateAvailable).toBeNull()
     expect(report.opencode.error).toBe("network down")
+    expect(report.ohMyOpencodeConfig.latest).toBeNull()
+    expect(report.ohMyOpencodeConfig.updateAvailable).toBeNull()
+    expect(report.ohMyOpencodeConfig.error).toBe("network down")
   })
 
   test("records http status when registry responds with an error", async () => {
@@ -28,11 +32,15 @@ describe("checkNpmUpdates", () => {
     const report = await checkNpmUpdates({
       opencode: "1.0.0",
       ohMyOpencode: "1.0.0",
+      ohMyOpencodeConfig: "1.0.0",
     })
 
     expect(report.opencode.latest).toBeNull()
     expect(report.opencode.updateAvailable).toBeNull()
     expect(report.opencode.error).toBe("HTTP 503")
+    expect(report.ohMyOpencodeConfig.latest).toBeNull()
+    expect(report.ohMyOpencodeConfig.updateAvailable).toBeNull()
+    expect(report.ohMyOpencodeConfig.error).toBe("HTTP 503")
   })
 })
 
