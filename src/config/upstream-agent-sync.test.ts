@@ -2,8 +2,11 @@ import { describe, expect, it } from "bun:test"
 import {
   applyAgentDefaultsToDefaultsFile,
   buildExpectedAgentDefaults,
+  buildExpectedCategoryDefaults,
   diffAgentDefaults,
+  diffCategoryDefaults,
   parseUpstreamAgentRequirements,
+  parseUpstreamCategoryRequirements,
 } from "./upstream-agent-sync.js"
 
 describe("parseUpstreamAgentRequirements", () => {
@@ -66,6 +69,32 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
   })
 })
 
+describe("parseUpstreamCategoryRequirements", () => {
+  it("parses first fallback model and variant for each upstream category", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  writing: {
+    fallbackChain: [
+      { providers: ["google"], model: "gemini-3-flash" },
+      { providers: ["anthropic"], model: "claude-sonnet-4-6" },
+    ],
+  },
+  "unspecified-low": {
+    fallbackChain: [
+      { providers: ["anthropic"], model: "claude-sonnet-4-6" },
+    ],
+  },
+}
+`
+
+    const parsed = parseUpstreamCategoryRequirements(source)
+    expect(parsed.writing).toEqual({ model: "gemini-3-flash" })
+    expect(parsed["unspecified-low"]).toEqual({ model: "claude-sonnet-4-6" })
+  })
+})
+
 describe("buildExpectedAgentDefaults", () => {
   it("preserves provider prefix while syncing model and variant", () => {
     const current = {
@@ -109,6 +138,42 @@ describe("diffAgentDefaults", () => {
   })
 })
 
+describe("buildExpectedCategoryDefaults", () => {
+  it("preserves provider prefix while syncing category model and variant", () => {
+    const current = {
+      writing: { model: "kimi-for-coding/k2p5" },
+      "unspecified-low": { model: "anthropic/claude-sonnet-4-5" },
+    }
+    const upstream = {
+      writing: { model: "gemini-3-flash" },
+      "unspecified-low": { model: "claude-sonnet-4-6" },
+    }
+
+    const expected = buildExpectedCategoryDefaults(current, upstream)
+    expect(expected.writing).toEqual({ model: "kimi-for-coding/gemini-3-flash" })
+    expect(expected["unspecified-low"]).toEqual({ model: "anthropic/claude-sonnet-4-6" })
+  })
+})
+
+describe("diffCategoryDefaults", () => {
+  it("returns changed category entries", () => {
+    const current = {
+      writing: { model: "kimi-for-coding/k2p5" },
+    }
+    const expected = {
+      writing: { model: "google/gemini-3-flash" },
+    }
+
+    expect(diffCategoryDefaults(current, expected)).toEqual([
+      {
+        category: "writing",
+        current: { model: "kimi-for-coding/k2p5" },
+        expected: { model: "google/gemini-3-flash" },
+      },
+    ])
+  })
+})
+
 describe("applyAgentDefaultsToDefaultsFile", () => {
   it("updates the agents block and sync metadata while preserving categories", () => {
     const content = `import type { Config } from "#types/config.js"
@@ -147,5 +212,43 @@ export const DEFAULT_CONFIG: Config = {
     expect(updated).toContain('sisyphus: { model: "anthropic/claude-opus-4-6", variant: "max" },')
     expect(updated).toContain('"multimodal-looker": { model: "google/gemini-3-flash" },')
     expect(updated).toContain('writing: { model: "google/gemini-3-flash" },')
+  })
+
+  it("updates both agents and categories when expected categories are provided", () => {
+    const content = `import type { Config } from "#types/config.js"
+
+/**
+ * Source of Truth:
+ * https://github.com/code-yeongyu/oh-my-opencode/blob/main/src/shared/model-requirements.ts
+ *
+ * Last Updated: Jan 2026 (v3.0.0)
+ */
+export const DEFAULT_CONFIG: Config = {
+  agents: {
+    atlas: { model: "kimi-for-coding/k2p5" },
+  },
+  categories: {
+    writing: { model: "kimi-for-coding/k2p5" },
+    "unspecified-low": { model: "anthropic/claude-sonnet-4-5" },
+  },
+}
+`
+
+    const updated = applyAgentDefaultsToDefaultsFile(
+      content,
+      {
+        atlas: { model: "kimi-for-coding/kimi-k2.5-free" },
+      },
+      "v3.8.0",
+      new Date("2026-02-21T12:00:00Z"),
+      {
+        writing: { model: "google/gemini-3-flash" },
+        "unspecified-low": { model: "anthropic/claude-sonnet-4-6" },
+      },
+    )
+
+    expect(updated).toContain('atlas: { model: "kimi-for-coding/kimi-k2.5-free" },')
+    expect(updated).toContain('writing: { model: "google/gemini-3-flash" },')
+    expect(updated).toContain('"unspecified-low": { model: "anthropic/claude-sonnet-4-6" },')
   })
 })

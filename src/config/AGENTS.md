@@ -12,7 +12,7 @@ Core configuration handling: discovery, loading, resolution, writing, upstream s
 | `writer.ts` | 34 | Atomic writes (temp + rename), concurrent modification detection via mtime |
 | `defaults.ts` | 35 | Default model assignments (synced from oh-my-opencode repo via upstream-agent-sync) |
 | `paths.ts` | 37 | Path constants (`USER_CONFIG_FULL_PATH`, `PROJECT_CONFIG_REL_PATH`, `MODELS_CACHE_PATH`, `AVAILABLE_MODELS_CACHE_*`, `UPDATE_NOTIFIER_CACHE_*`) |
-| `upstream-agent-sync.ts` | 434 | **Complex**: Parses upstream TypeScript source to extract agent model requirements. Hand-rolled parser (brace matching, string escaping, JS object key parsing). Used by sync script. |
+| `upstream-agent-sync.ts` | 434 | **Complex**: Parses upstream TypeScript source to extract agent/category model requirements. Hand-rolled parser (brace matching, string escaping, JS object key parsing). Used by sync script. |
 
 ## Config Path Resolution
 
@@ -60,10 +60,13 @@ Parses the oh-my-opencode repo's `model-requirements.ts` to extract default mode
 
 | Function | Purpose |
 |----------|---------|
-| `parseUpstreamAgentRequirements(source)` | Main entry: extract agent→model map from upstream TS source |
-| `buildExpectedAgentDefaults(current, upstream)` | Merge upstream models with current provider prefixes |
-| `diffAgentDefaults(current, expected)` | Compare current vs expected, return diffs |
-| `applyAgentDefaultsToDefaultsFile(content, agents, tag, date)` | Rewrite `defaults.ts` with new agent block + metadata |
+| `parseUpstreamAgentRequirements(source)` | Extract agent→model map from upstream TS source |
+| `parseUpstreamCategoryRequirements(source)` | Extract category→model map from upstream TS source |
+| `buildExpectedAgentDefaults(current, upstream)` | Merge upstream agent models with current provider prefixes |
+| `buildExpectedCategoryDefaults(current, upstream)` | Merge upstream category models with current provider prefixes |
+| `diffAgentDefaults(current, expected)` | Compare current vs expected agent defaults, return diffs |
+| `diffCategoryDefaults(current, expected)` | Compare current vs expected category defaults, return diffs |
+| `applyAgentDefaultsToDefaultsFile(content, agents, tag, date, categories?)` | Rewrite `defaults.ts` blocks + sync metadata |
 
 Invoked via `src/scripts/sync-agent-defaults.ts` (CLI script).
 
