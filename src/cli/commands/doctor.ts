@@ -6,6 +6,7 @@ import { $ } from "bun"
 import chalk from "chalk"
 import { z } from "zod"
 import type { BaseCommandOptions } from "#cli/types.js"
+import { CLI_VERSION } from "#cli/version.js"
 import { loadConfig } from "#config/loader.js"
 import { MODELS_CACHE_PATH, OPENCODE_CONFIG_PATH } from "#config/paths.js"
 import { resolveConfigPath } from "#config/resolve.js"
@@ -51,6 +52,7 @@ interface DiagnosticReport {
   versions: {
     opencode: string | null
     ohMyOpencode: string | null
+    ohMyOpencodeConfig: string | null
   }
   updates: NpmUpdateReport
   summary: {
@@ -373,7 +375,11 @@ function generateReport(
   configPath: string,
   configValid: boolean,
   issues: Issue[],
-  versions: { opencode: string | null; ohMyOpencode: string | null },
+  versions: {
+    opencode: string | null
+    ohMyOpencode: string | null
+    ohMyOpencodeConfig: string | null
+  },
   updates: NpmUpdateReport,
   summary: {
     agentsConfigured: number
@@ -426,6 +432,11 @@ function formatNpmVersionLine(
   const symbol = !hasCurrent || needsUpdate || updateUnknown ? chalk.yellow("⚠") : chalk.green("✓")
 
   return { symbol, line: `${label}: ${labelText}${suffix}` }
+}
+
+function getOhMyOpencodeConfigVersion(): string | null {
+  const version = CLI_VERSION.trim()
+  return version.length > 0 ? version : null
 }
 
 export function printTextReport(
@@ -481,6 +492,14 @@ export function printTextReport(
     "not found",
   )
   printLine(`${ohMyLine.symbol} ${ohMyLine.line}`)
+
+  const ohMyConfigLine = formatNpmVersionLine(
+    "oh-my-opencode-config (this CLI)",
+    report.versions.ohMyOpencodeConfig,
+    report.updates.ohMyOpencodeConfig,
+    "not found",
+  )
+  printLine(`${ohMyConfigLine.symbol} ${ohMyConfigLine.line}`)
 
   printBlank()
   printLine(chalk.bold("Configuration summary"))
@@ -573,6 +592,7 @@ export async function buildDoctorReport(
   let updates: NpmUpdateReport
   let opencodeVersion: string | null
   let ohMyOpencodeVersion: string | null
+  let ohMyOpencodeConfigVersion: string | null
 
   if (showProgress) {
     const s = spinner()
@@ -583,9 +603,11 @@ export async function buildDoctorReport(
     ])
     opencodeVersion = nextOpencodeVersion
     ohMyOpencodeVersion = nextOhMyOpencodeVersion
+    ohMyOpencodeConfigVersion = getOhMyOpencodeConfigVersion()
     updates = await checkNpmUpdates({
       opencode: opencodeVersion,
       ohMyOpencode: ohMyOpencodeVersion,
+      ohMyOpencodeConfig: ohMyOpencodeConfigVersion,
     })
     s.stop("Checked npm versions")
   } else {
@@ -595,9 +617,11 @@ export async function buildDoctorReport(
     ])
     opencodeVersion = nextOpencodeVersion
     ohMyOpencodeVersion = nextOhMyOpencodeVersion
+    ohMyOpencodeConfigVersion = getOhMyOpencodeConfigVersion()
     updates = await checkNpmUpdates({
       opencode: opencodeVersion,
       ohMyOpencode: ohMyOpencodeVersion,
+      ohMyOpencodeConfig: ohMyOpencodeConfigVersion,
     })
   }
 
@@ -695,6 +719,7 @@ export async function buildDoctorReport(
     {
       opencode: opencodeVersion,
       ohMyOpencode: ohMyOpencodeVersion,
+      ohMyOpencodeConfig: ohMyOpencodeConfigVersion,
     },
     updates,
     summary,
