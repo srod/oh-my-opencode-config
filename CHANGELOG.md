@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3
+
+### Patch Changes
+
+- [#27](https://github.com/srod/oh-my-opencode-config/pull/27) [`2b04f22`](https://github.com/srod/oh-my-opencode-config/commit/2b04f2292bc7fcb51b890b514fb7f1985a489858) Thanks [@srod](https://github.com/srod)! - Extend `doctor` npm checks to include `oh-my-opencode-config` itself:
+
+  - Add current CLI version in doctor report (`versions.ohMyOpencodeConfig`)
+  - Add npm update status for `oh-my-opencode-config` (`updates.ohMyOpencodeConfig`)
+  - Show a dedicated text output line for this CLI in `doctor`
+
 ## 0.4.2
 
 ### Patch Changes
