@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.2
+
+### Patch Changes
+
+- [#24](https://github.com/srod/oh-my-opencode-config/pull/24) [`01fa392`](https://github.com/srod/oh-my-opencode-config/commit/01fa392b00bd75b2bcd63bd06a1381dc94097286) Thanks [@srod](https://github.com/srod)! - Sync defaults with upstream `oh-my-opencode` `v3.8.0` and improve defaults sync tooling:
+
+  - Update agent defaults and metadata to `v3.8.0`
+  - Update category defaults (`unspecified-low` and `writing`) to match upstream
+  - Extend sync script behavior to validate/apply both agent and category defaults
+  - Add `sync:defaults:check` and `sync:defaults:apply` script names, keeping `sync:agents:*` as backward-compatible aliases
+
 ## 0.4.1
 
 ### Patch Changes
