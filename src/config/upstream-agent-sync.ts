@@ -4,9 +4,16 @@ export type SyncedAgentConfig = {
 }
 
 export type AgentDefaults = Record<string, SyncedAgentConfig>
+export type CategoryDefaults = Record<string, SyncedAgentConfig>
 
 export type AgentDefaultDiff = {
   agent: string
+  current: SyncedAgentConfig
+  expected: SyncedAgentConfig
+}
+
+export type CategoryDefaultDiff = {
+  category: string
   current: SyncedAgentConfig
   expected: SyncedAgentConfig
 }
@@ -247,6 +254,26 @@ function parseFirstFallback(entry: string): SyncedAgentConfig | undefined {
 }
 
 /**
+ * Parse a requirements object body into synced defaults by reading each property's first fallback model.
+ *
+ * @param requirementsObject - Source text containing top-level requirement properties
+ * @returns Mapping of requirement keys to first fallback model/variant
+ */
+function parseRequirementsObject(requirementsObject: string): AgentDefaults {
+  const properties = extractTopLevelProperties(requirementsObject)
+
+  const parsed: AgentDefaults = {}
+  for (const property of properties) {
+    const firstFallback = parseFirstFallback(property.value)
+    if (firstFallback !== undefined) {
+      parsed[property.key] = firstFallback
+    }
+  }
+
+  return parsed
+}
+
+/**
  * Determines whether a string is a valid JavaScript identifier name.
  *
  * @param key - The string to test as an identifier
@@ -285,34 +312,33 @@ export function parseUpstreamAgentRequirements(source: string): AgentDefaults {
 
   const agentSlice = source.slice(0, categoryMarkerIndex)
   const agentObject = findTopLevelObjectByMarker(agentSlice, AGENT_REQUIREMENTS_MARKER)
-  const properties = extractTopLevelProperties(agentObject)
-
-  const parsed: AgentDefaults = {}
-  for (const property of properties) {
-    const firstFallback = parseFirstFallback(property.value)
-    if (firstFallback !== undefined) {
-      parsed[property.key] = firstFallback
-    }
-  }
-
-  return parsed
+  return parseRequirementsObject(agentObject)
 }
 
 /**
- * Builds the expected agent defaults by aligning each current agent with upstream model requirements.
+ * Parse upstream category requirement definitions from a source string into category default configurations.
  *
- * For each agent in `current`, if `upstream` provides a config the result uses the upstream model and variant;
- * if the current agent's model includes a provider prefix (text before `/`), that prefix is preserved and applied
- * to the upstream model name. Agents absent from `upstream` are copied from `current`.
- *
- * @param current - Mapping of agent keys to their existing synced configurations
- * @param upstream - Mapping of agent keys to upstream synced configurations to adopt
- * @returns A mapping of agent keys to the computed expected synced configurations
+ * @param source - The complete upstream source text that contains category model requirement blocks.
+ * @returns A CategoryDefaults mapping each category key to the first `SyncedAgentConfig` found in its fallback chain.
+ * @throws If the category requirements marker cannot be located in the provided source.
  */
-export function buildExpectedAgentDefaults(
-  current: AgentDefaults,
-  upstream: AgentDefaults,
-): AgentDefaults {
+export function parseUpstreamCategoryRequirements(source: string): CategoryDefaults {
+  const categoryObject = findTopLevelObjectByMarker(source, CATEGORY_REQUIREMENTS_MARKER)
+  return parseRequirementsObject(categoryObject)
+}
+
+/**
+ * Builds expected defaults by aligning each current key with upstream model requirements.
+ *
+ * For each key in `current`, if `upstream` provides a config the result uses the upstream model and variant;
+ * if the current model includes a provider prefix (text before `/`), that prefix is preserved and applied
+ * to the upstream model name. Keys absent from `upstream` are copied from `current`.
+ *
+ * @param current - Mapping of keys to their existing synced configurations
+ * @param upstream - Mapping of keys to upstream synced configurations to adopt
+ * @returns A mapping of keys to the computed expected synced configurations
+ */
+function buildExpectedDefaults(current: AgentDefaults, upstream: AgentDefaults): AgentDefaults {
   const expected: AgentDefaults = {}
 
   for (const [agent, config] of Object.entries(current)) {
@@ -340,22 +366,50 @@ export function buildExpectedAgentDefaults(
 }
 
 /**
- * Produce a list of agent default differences between two sets of agent defaults.
+ * Builds the expected agent defaults by aligning each current agent with upstream model requirements.
  *
- * @param current - The current agent defaults to compare
- * @param expected - The expected/upstream agent defaults to compare against
- * @returns An array of diffs for agents present in both inputs where the `model` or `variant` differ; each diff contains the agent key, the current config, and the expected config
+ * @param current - Mapping of agent keys to their existing synced configurations
+ * @param upstream - Mapping of agent keys to upstream synced configurations to adopt
+ * @returns A mapping of agent keys to the computed expected synced configurations
  */
-export function diffAgentDefaults(
+export function buildExpectedAgentDefaults(
+  current: AgentDefaults,
+  upstream: AgentDefaults,
+): AgentDefaults {
+  return buildExpectedDefaults(current, upstream)
+}
+
+/**
+ * Builds the expected category defaults by aligning each current category with upstream model requirements.
+ *
+ * @param current - Mapping of category keys to their existing synced configurations
+ * @param upstream - Mapping of category keys to upstream synced configurations to adopt
+ * @returns A mapping of category keys to the computed expected synced configurations
+ */
+export function buildExpectedCategoryDefaults(
+  current: CategoryDefaults,
+  upstream: CategoryDefaults,
+): CategoryDefaults {
+  return buildExpectedDefaults(current, upstream)
+}
+
+/**
+ * Produce a list of default differences between two sets of synced defaults.
+ *
+ * @param current - The current defaults to compare
+ * @param expected - The expected/upstream defaults to compare against
+ * @returns An array of diffs for keys present in both inputs where the `model` or `variant` differ
+ */
+function diffDefaults(
   current: AgentDefaults,
   expected: AgentDefaults,
-): AgentDefaultDiff[] {
+): Array<{ key: string; current: SyncedAgentConfig; expected: SyncedAgentConfig }> {
   const allKeys = new Set([...Object.keys(current), ...Object.keys(expected)])
-  const diffs: AgentDefaultDiff[] = []
+  const diffs: Array<{ key: string; current: SyncedAgentConfig; expected: SyncedAgentConfig }> = []
 
-  for (const agent of Array.from(allKeys).sort()) {
-    const currentConfig = current[agent]
-    const expectedConfig = expected[agent]
+  for (const key of Array.from(allKeys).sort()) {
+    const currentConfig = current[key]
+    const expectedConfig = expected[key]
     if (currentConfig === undefined || expectedConfig === undefined) {
       continue
     }
@@ -364,7 +418,7 @@ export function diffAgentDefaults(
     const expectedVariant = expectedConfig.variant ?? undefined
     if (currentConfig.model !== expectedConfig.model || currentVariant !== expectedVariant) {
       diffs.push({
-        agent,
+        key,
         current: currentConfig,
         expected: expectedConfig,
       })
@@ -375,59 +429,158 @@ export function diffAgentDefaults(
 }
 
 /**
- * Replace the agents block and version metadata in a defaults file with the provided expected agents and upstream tag.
+ * Produce a list of agent default differences between two sets of agent defaults.
  *
- * @param defaultsFileContent - The original defaults file content to modify.
- * @param expectedAgents - Mapping of agent keys to desired model and optional variant to write into the agents block.
- * @param upstreamTag - Git tag or commit used to update the model-requirements URL and included in the Last Updated metadata.
- * @param now - Date used to format the Last Updated metadata.
- * @returns The updated defaults file content with the agents block, model-requirements URL, and Last Updated line replaced.
- * @throws Error if the agents block or its opening brace cannot be found in the provided defaults file content.
+ * @param current - The current agent defaults to compare
+ * @param expected - The expected/upstream agent defaults to compare against
+ * @returns An array of diffs for agents present in both inputs where the `model` or `variant` differ; each diff contains the agent key, the current config, and the expected config
  */
-export function applyAgentDefaultsToDefaultsFile(
-  defaultsFileContent: string,
-  expectedAgents: AgentDefaults,
-  upstreamTag: string,
-  now: Date,
+export function diffAgentDefaults(
+  current: AgentDefaults,
+  expected: AgentDefaults,
+): AgentDefaultDiff[] {
+  return diffDefaults(current, expected).map((diff) => ({
+    agent: diff.key,
+    current: diff.current,
+    expected: diff.expected,
+  }))
+}
+
+/**
+ * Produce a list of category default differences between two sets of category defaults.
+ *
+ * @param current - The current category defaults to compare
+ * @param expected - The expected/upstream category defaults to compare against
+ * @returns An array of diffs for categories present in both inputs where the `model` or `variant` differ; each diff contains the category key, the current config, and the expected config
+ */
+export function diffCategoryDefaults(
+  current: CategoryDefaults,
+  expected: CategoryDefaults,
+): CategoryDefaultDiff[] {
+  return diffDefaults(current, expected).map((diff) => ({
+    category: diff.key,
+    current: diff.current,
+    expected: diff.expected,
+  }))
+}
+
+/**
+ * Build a formatted defaults block from synced entries.
+ *
+ * @param blockName - The top-level defaults key to render (`agents` or `categories`)
+ * @param entriesByKey - Mapping of keys to synced model configuration
+ * @returns A formatted TypeScript object block string ready to splice into defaults.ts
+ */
+function buildDefaultsBlock(
+  blockName: "agents" | "categories",
+  entriesByKey: AgentDefaults,
 ): string {
-  const entries = Object.entries(expectedAgents).map(([agent, config]) => {
-    const key = isIdentifierKey(agent) ? agent : JSON.stringify(agent)
+  const entries = Object.entries(entriesByKey).map(([keyName, config]) => {
+    const key = isIdentifierKey(keyName) ? keyName : JSON.stringify(keyName)
     if (config.variant === undefined) {
       return `    ${key}: { model: "${config.model}" },`
     }
     return `    ${key}: { model: "${config.model}", variant: "${config.variant}" },`
   })
 
-  const agentsBlock = `  agents: {\n${entries.join("\n")}\n  },`
+  return `  ${blockName}: {\n${entries.join("\n")}\n  },`
+}
 
-  const agentsStart = defaultsFileContent.indexOf("  agents:")
-  if (agentsStart < 0) {
-    throw new Error("Could not find agents block in defaults.ts")
+/**
+ * Replace a top-level defaults block (`agents` or `categories`) in defaults.ts content.
+ *
+ * @param defaultsFileContent - The original defaults file content
+ * @param blockName - The top-level block to replace
+ * @param replacementBlock - The replacement block content
+ * @returns Updated defaults content with the target block replaced
+ * @throws Error if the target block or object braces cannot be found
+ */
+function replaceDefaultsBlock(
+  defaultsFileContent: string,
+  blockName: "agents" | "categories",
+  replacementBlock: string,
+): string {
+  const blockStart = defaultsFileContent.indexOf(`  ${blockName}:`)
+  if (blockStart < 0) {
+    throw new Error(`Could not find ${blockName} block in defaults.ts`)
   }
 
-  const agentsOpenBrace = defaultsFileContent.indexOf("{", agentsStart)
-  if (agentsOpenBrace < 0) {
-    throw new Error("Could not find agents object start in defaults.ts")
+  const blockOpenBrace = defaultsFileContent.indexOf("{", blockStart)
+  if (blockOpenBrace < 0) {
+    throw new Error(`Could not find ${blockName} object start in defaults.ts`)
   }
 
-  const agentsCloseBrace = findMatchingBrace(defaultsFileContent, agentsOpenBrace)
-  let agentsEnd = agentsCloseBrace + 1
-  if (defaultsFileContent[agentsEnd] === ",") {
-    agentsEnd += 1
+  const blockCloseBrace = findMatchingBrace(defaultsFileContent, blockOpenBrace)
+  let blockEnd = blockCloseBrace + 1
+  if (defaultsFileContent[blockEnd] === ",") {
+    blockEnd += 1
   }
 
-  let updated = `${defaultsFileContent.slice(0, agentsStart)}${agentsBlock}${defaultsFileContent.slice(
-    agentsEnd,
+  return `${defaultsFileContent.slice(0, blockStart)}${replacementBlock}${defaultsFileContent.slice(
+    blockEnd,
   )}`
+}
 
-  updated = updated.replace(
+/**
+ * Replace a required metadata line in defaults.ts content.
+ *
+ * @param defaultsFileContent - The current defaults file content
+ * @param pattern - Regex pattern used to find the metadata line
+ * @param replacement - Replacement string for the matched line
+ * @param markerName - Human-readable marker name for error reporting
+ * @returns Updated defaults content with the metadata line replaced
+ * @throws Error if the metadata marker cannot be found
+ */
+function replaceRequiredMetadata(
+  defaultsFileContent: string,
+  pattern: RegExp,
+  replacement: string,
+  markerName: string,
+): string {
+  if (defaultsFileContent.match(pattern) === null) {
+    throw new Error(`Could not find ${markerName} in defaults.ts`)
+  }
+
+  return defaultsFileContent.replace(pattern, replacement)
+}
+
+/**
+ * Replace synced defaults blocks and version metadata in a defaults file.
+ *
+ * @param defaultsFileContent - The original defaults file content to modify.
+ * @param expectedAgents - Mapping of agent keys to desired model and optional variant to write into the agents block.
+ * @param upstreamTag - Git tag or commit used to update the model-requirements URL and included in the Last Updated metadata.
+ * @param now - Date used to format the Last Updated metadata.
+ * @param expectedCategories - Optional mapping of category keys to desired model and optional variant to write into the categories block.
+ * @returns The updated defaults file content with synced defaults blocks, model-requirements URL, and Last Updated line replaced.
+ * @throws Error if a target block or its opening brace cannot be found in the provided defaults file content.
+ */
+export function applyAgentDefaultsToDefaultsFile(
+  defaultsFileContent: string,
+  expectedAgents: AgentDefaults,
+  upstreamTag: string,
+  now: Date,
+  expectedCategories?: CategoryDefaults,
+): string {
+  const agentsBlock = buildDefaultsBlock("agents", expectedAgents)
+  let updated = replaceDefaultsBlock(defaultsFileContent, "agents", agentsBlock)
+  if (expectedCategories !== undefined) {
+    const categoriesBlock = buildDefaultsBlock("categories", expectedCategories)
+    updated = replaceDefaultsBlock(updated, "categories", categoriesBlock)
+  }
+
+  updated = replaceRequiredMetadata(
+    updated,
     /\* https:\/\/github\.com\/code-yeongyu\/oh-my-opencode\/blob\/[^\s]+\/src\/shared\/model-requirements\.ts/,
     `* https://github.com/code-yeongyu/oh-my-opencode/blob/${upstreamTag}/src/shared/model-requirements.ts`,
+    "source-of-truth metadata",
   )
 
-  updated = updated.replace(
+  updated = replaceRequiredMetadata(
+    updated,
     /\* Last Updated: .*$/m,
     `* Last Updated: ${formatMonthYear(now)} (${upstreamTag})`,
+    "last-updated metadata",
   )
 
   return updated

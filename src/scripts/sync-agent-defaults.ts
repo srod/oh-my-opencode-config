@@ -4,11 +4,15 @@ import { fileURLToPath } from "node:url"
 import chalk from "chalk"
 import { z } from "zod"
 import { DEFAULT_CONFIG } from "#config/defaults.js"
+import type { AgentDefaultDiff, CategoryDefaultDiff } from "#config/upstream-agent-sync.js"
 import {
   applyAgentDefaultsToDefaultsFile,
   buildExpectedAgentDefaults,
+  buildExpectedCategoryDefaults,
   diffAgentDefaults,
+  diffCategoryDefaults,
   parseUpstreamAgentRequirements,
+  parseUpstreamCategoryRequirements,
 } from "#config/upstream-agent-sync.js"
 import { atomicWrite } from "#utils/fs.js"
 import { printError, printLine, printSuccess } from "#utils/output.js"
@@ -123,14 +127,36 @@ function formatConfig(config: { model: string; variant?: string }): string {
 }
 
 /**
- * Synchronizes local agent default configurations with upstream requirements.
+ * Print diff lines for both agent and category defaults.
+ *
+ * @param agentDiffs - Differences between current and expected agent defaults
+ * @param categoryDiffs - Differences between current and expected category defaults
+ */
+function printDiffLines(
+  agentDiffs: AgentDefaultDiff[],
+  categoryDiffs: CategoryDefaultDiff[],
+): void {
+  for (const diff of agentDiffs) {
+    printLine(
+      `  ${chalk.yellow("•")} ${chalk.bold(`[agent] ${diff.agent}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
+    )
+  }
+  for (const diff of categoryDiffs) {
+    printLine(
+      `  ${chalk.yellow("•")} ${chalk.bold(`[category] ${diff.category}`)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
+    )
+  }
+}
+
+/**
+ * Synchronizes local agent and category default configurations with upstream requirements.
  *
  * Performs a full sync workflow: determines CLI mode (`--check` or `--apply`), fetches the latest upstream release and requirements, computes expected defaults and diffs against the current defaults file, and either reports drift or updates the defaults file.
  *
  * Behavior details:
- * - In `--check` mode: prints sync status and per-agent diffs when drift is detected, and sets `process.exitCode = 1` on drift.
+ * - In `--check` mode: prints sync status and per-agent/per-category diffs when drift is detected, and sets `process.exitCode = 1` on drift.
  * - In `--apply` mode: writes the updated defaults file unless `--dry-run` is specified (in which case it only prints what would change).
- * - Throws an Error if upstream parsing yields zero agents or if `DEFAULT_CONFIG.agents` is missing.
+ * - Throws an Error if upstream parsing yields zero agents/categories or if corresponding defaults blocks are missing.
  *
  * Side effects:
  * - May write to the filesystem (updates DEFAULTS_FILE_PATH).
@@ -146,40 +172,50 @@ async function run(): Promise<void> {
   printLine(chalk.dim(`Fetching upstream requirements from ${tag}...`))
   const source = await fetchUpstreamRequirements(tag)
   const upstreamAgents = parseUpstreamAgentRequirements(source)
-  const upstreamCount = Object.keys(upstreamAgents).length
-  if (upstreamCount === 0) {
+  const upstreamCategories = parseUpstreamCategoryRequirements(source)
+  if (Object.keys(upstreamAgents).length === 0) {
     throw new Error("Parsed zero agent requirements from upstream source")
+  }
+  if (Object.keys(upstreamCategories).length === 0) {
+    throw new Error("Parsed zero category requirements from upstream source")
   }
 
   const currentAgents = DEFAULT_CONFIG.agents
+  const currentCategories = DEFAULT_CONFIG.categories
   if (currentAgents === undefined) {
     throw new Error("DEFAULT_CONFIG.agents is missing")
   }
+  if (currentCategories === undefined) {
+    throw new Error("DEFAULT_CONFIG.categories is missing")
+  }
 
   const expectedAgents = buildExpectedAgentDefaults(currentAgents, upstreamAgents)
-  const diffs = diffAgentDefaults(currentAgents, expectedAgents)
+  const expectedCategories = buildExpectedCategoryDefaults(currentCategories, upstreamCategories)
+  const agentDiffs = diffAgentDefaults(currentAgents, expectedAgents)
+  const categoryDiffs = diffCategoryDefaults(currentCategories, expectedCategories)
+  const totalDiffs = agentDiffs.length + categoryDiffs.length
 
   const currentFile = await Bun.file(DEFAULTS_FILE_PATH).text()
-  const nextFile = applyAgentDefaultsToDefaultsFile(currentFile, expectedAgents, tag, new Date())
+  const nextFile = applyAgentDefaultsToDefaultsFile(
+    currentFile,
+    expectedAgents,
+    tag,
+    new Date(),
+    expectedCategories,
+  )
   const isAlreadySynced = currentFile === nextFile
 
   if (mode === "check") {
     if (isAlreadySynced) {
-      printSuccess(`Agent defaults are in sync with upstream ${tag}.`)
+      printSuccess(`Agent and category defaults are in sync with upstream ${tag}.`)
       return
     }
 
-    printError(`Agent defaults drift detected vs upstream ${tag}.`)
-    if (diffs.length > 0) {
-      for (const diff of diffs) {
-        printLine(
-          `  ${chalk.yellow("•")} ${chalk.bold(diff.agent)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-        )
-      }
+    printError(`Defaults drift detected vs upstream ${tag}.`)
+    if (totalDiffs > 0) {
+      printDiffLines(agentDiffs, categoryDiffs)
     } else {
-      printLine(
-        `  ${chalk.yellow("•")} Agent models match, but sync metadata in defaults.ts is stale.`,
-      )
+      printLine(`  ${chalk.yellow("•")} Defaults match, but sync metadata in defaults.ts is stale.`)
     }
 
     process.exitCode = 1
@@ -187,7 +223,7 @@ async function run(): Promise<void> {
   }
 
   if (isAlreadySynced) {
-    printSuccess(`Agent defaults already in sync with upstream ${tag}.`)
+    printSuccess(`Agent and category defaults already in sync with upstream ${tag}.`)
     return
   }
 
@@ -195,16 +231,12 @@ async function run(): Promise<void> {
     printLine(chalk.yellow(`Dry run: would update ${DEFAULTS_FILE_PATH}`))
   } else {
     await atomicWrite(DEFAULTS_FILE_PATH, nextFile)
-    printSuccess(`Updated agent defaults from upstream ${tag}.`)
+    printSuccess(`Updated defaults from upstream ${tag}.`)
   }
 
-  if (diffs.length > 0) {
-    printLine(chalk.dim(`Updated ${diffs.length} agent default${diffs.length === 1 ? "" : "s"}:`))
-    for (const diff of diffs) {
-      printLine(
-        `  ${chalk.yellow("•")} ${chalk.bold(diff.agent)}: ${chalk.dim(formatConfig(diff.current))} ${chalk.gray("->")} ${formatConfig(diff.expected)}`,
-      )
-    }
+  if (totalDiffs > 0) {
+    printLine(chalk.dim(`Updated ${totalDiffs} default${totalDiffs === 1 ? "" : "s"}:`))
+    printDiffLines(agentDiffs, categoryDiffs)
   } else {
     printLine(chalk.dim("Updated sync metadata only."))
   }
