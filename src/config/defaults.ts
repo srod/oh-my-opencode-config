@@ -4,9 +4,9 @@ import type { Config } from "#types/config.js"
  * Default configuration synced with oh-my-opencode repository.
  *
  * Source of Truth:
- * https://github.com/code-yeongyu/oh-my-opencode/blob/v3.8.3/src/shared/model-requirements.ts
+ * https://github.com/code-yeongyu/oh-my-opencode/blob/v3.8.4/src/shared/model-requirements.ts
  *
- * Last Updated: Feb 2026 (v3.8.3)
+ * Last Updated: Feb 2026 (v3.8.4)
  */
 export const DEFAULT_CONFIG: Config = {
   agents: {
