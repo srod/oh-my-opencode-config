@@ -10,6 +10,7 @@ export interface SelectModelOptions {
   models: Model[]
   agentName: AgentName
   currentModelId?: string
+  onRefresh?: () => Promise<Model[]>
 }
 
 function getCapabilitiesDisplay(model: Model): string {
@@ -61,6 +62,8 @@ export async function selectModel(
     message: (searchTerm) =>
       `Select model for ${chalk.bold(options.agentName)} ${searchTerm ? `(filter: "${searchTerm}")` : ""}`,
     searchPlaceholder: "e.g. gpt-4",
+    onRefresh: options.onRefresh,
+    refreshLabel: "Refresh models",
     backLabel: "Back to providers",
     canGoBack: true,
   })

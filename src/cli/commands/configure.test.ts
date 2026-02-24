@@ -122,6 +122,20 @@ describe("configureAgentsCommand", () => {
     expect(mockOutro).toHaveBeenCalled()
   })
 
+  test("passes model refresh callback to model picker", async () => {
+    mockSelectAgent.mockImplementation(() => Promise.resolve("oracle"))
+    mockConfirm.mockImplementation(() => Promise.resolve(false))
+
+    await configureAgentsCommand(defaultOptions)
+
+    const firstSelectModelCall = mockSelectModel.mock.calls[0]
+    expect(firstSelectModelCall).toBeDefined()
+
+    const modelPickerOptions = firstSelectModelCall?.[0]
+    expect(modelPickerOptions).toBeDefined()
+    expect(typeof modelPickerOptions?.onRefresh).toBe("function")
+  })
+
   test("cancel at agent selection", async () => {
     mockSelectAgent.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as string))
 

@@ -107,6 +107,11 @@ export async function menuConfigureAgents(
           models,
           agentName: agent,
           currentModelId: currentModel,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            return getAvailableModels(mergedCache, selectedProvider)
+          },
         })
         if (isCancel(modelResult)) {
           printLine(chalk.yellow("Operation cancelled."))
@@ -282,6 +287,11 @@ export async function menuConfigureCategories(
           models,
           agentName: "librarian",
           currentModelId: currentModel,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            return getAvailableModels(mergedCache, selectedProvider)
+          },
         })
         if (isCancel(modelResult)) {
           printLine(chalk.yellow("Operation cancelled."))

@@ -143,7 +143,16 @@ async function configureAgentFlow(
           return { type: "cancel" }
         }
 
-        const modelResult = await selectModel({ models, agentName, currentModelId })
+        const modelResult = await selectModel({
+          models,
+          agentName,
+          currentModelId,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            return getAvailableModels(modelsCache, selectedProvider)
+          },
+        })
         if (isCancel(modelResult)) return { type: "cancel" }
 
         if (modelResult === "BACK_ACTION") {
