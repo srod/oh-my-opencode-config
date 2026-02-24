@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { DEFAULT_CONFIG } from "./defaults.js"
 
 describe("DEFAULT_CONFIG upstream sync", () => {
-  it("matches oh-my-opencode v3.8.4 agent defaults", () => {
+  it("matches oh-my-opencode v3.8.5 agent defaults", () => {
     expect(DEFAULT_CONFIG.agents.sisyphus).toEqual({
       model: "anthropic/claude-opus-4-6",
       variant: "max",
@@ -34,7 +34,7 @@ describe("DEFAULT_CONFIG upstream sync", () => {
     })
   })
 
-  it("matches oh-my-opencode v3.8.4 category defaults", () => {
+  it("matches oh-my-opencode v3.8.5 category defaults", () => {
     expect(DEFAULT_CONFIG.categories["visual-engineering"]).toEqual({
       model: "google/gemini-3-pro",
       variant: "high",
