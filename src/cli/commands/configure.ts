@@ -229,7 +229,13 @@ export async function configureAgentsCommand(
     const currentModel = config.agents?.[agent]?.model
     const currentVariant = config.agents?.[agent]?.variant
 
-    const result = await configureAgentFlow(mergedCache, agent, currentModel, currentVariant, options.opencodeConfig)
+    const result = await configureAgentFlow(
+      mergedCache,
+      agent,
+      currentModel,
+      currentVariant,
+      options.opencodeConfig,
+    )
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
@@ -314,7 +320,13 @@ export async function configureCategoriesCommand(
     const currentModel = config.categories?.[category]?.model
     const currentVariant = config.categories?.[category]?.variant
 
-    const result = await configureAgentFlow(mergedCache, "librarian", currentModel, currentVariant, options.opencodeConfig)
+    const result = await configureAgentFlow(
+      mergedCache,
+      "librarian",
+      currentModel,
+      currentVariant,
+      options.opencodeConfig,
+    )
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
