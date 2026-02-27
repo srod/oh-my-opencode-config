@@ -26,6 +26,16 @@ import { getFileMtime } from "#utils/fs.js"
 import { printLine } from "#utils/output.js"
 import { isAgentName } from "#validation/capabilities.js"
 
+/**
+ * Interactively configure agents' provider/model/variant assignments in the configuration file.
+ *
+ * Loads existing configuration and available models (including custom models), prompts the user to
+ * select agents and assign a provider, model, and variant for each, shows a formatted diff of
+ * proposed changes, and — after confirmation — creates a backup and saves the updated config.
+ *
+ * @param options - Command options controlling the config file path (`config`), custom models source (`opencodeConfig`),
+ *                  whether to refresh remote model data (`refresh`), and whether to perform a dry run without saving (`dryRun`).
+ */
 export async function menuConfigureAgents(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ): Promise<void> {
@@ -107,6 +117,14 @@ export async function menuConfigureAgents(
           models,
           agentName: agent,
           currentModelId: currentModel,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels(options.opencodeConfig)
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
+          },
         })
         if (isCancel(modelResult)) {
           printLine(chalk.yellow("Operation cancelled."))
@@ -185,6 +203,17 @@ export async function menuConfigureAgents(
   printLine(chalk.green("Configuration updated! Backup created."))
 }
 
+/**
+ * Interactively configure provider/model/variant mappings for configuration categories.
+ *
+ * Prompts the user to step through each category, allowing selection of provider, model (with an optional refresh of available models), and variant; computes and displays the resulting diff and, on confirmation, creates a backup and saves the updated configuration file.
+ *
+ * @param options - Partial command options used by the flow:
+ *   - `config`: path or identifier for the config file to load and modify
+ *   - `opencodeConfig`: path or data used to load custom model definitions
+ *   - `refresh`: when true, forces refreshing available model IDs before prompting
+ *   - `dryRun`: when true, shows the proposed changes but does not apply them
+ */
 export async function menuConfigureCategories(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ): Promise<void> {
@@ -282,6 +311,14 @@ export async function menuConfigureCategories(
           models,
           agentName: "librarian",
           currentModelId: currentModel,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels(options.opencodeConfig)
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
+          },
         })
         if (isCancel(modelResult)) {
           printLine(chalk.yellow("Operation cancelled."))

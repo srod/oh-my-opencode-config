@@ -101,11 +101,25 @@ type FlowResult =
   | { type: "cancel" }
   | { type: "back" }
 
+/**
+ * Prompt the user to choose a provider, model, and variant for an agent.
+ *
+ * This runs an interactive flow: select a provider, then a model (with an optional refresh
+ * callback to reload model lists), then a variant. The user may cancel or navigate back at
+ * any step.
+ *
+ * @param modelsCache - Merged models cache used to enumerate available models
+ * @param agentName - Agent identifier used to tailor model selection prompts
+ * @param currentModelId - Optional model id to preselect in the model chooser
+ * @param currentVariant - Optional variant to preselect in the variant chooser
+ * @param opencodeConfig - Optional path to the opencode configuration (used when refreshing custom models)
+ * @returns On success, an object with `type: "success"` containing `provider`, `model` (with `id`), and `variant`; `type: "cancel"` if the user cancelled; or `type: "back"` if the user requested to go back to the caller.
 async function configureAgentFlow(
   modelsCache: Awaited<ReturnType<typeof loadModelsCache>>,
   agentName: AgentName,
   currentModelId?: string,
   currentVariant?: string,
+  opencodeConfig?: string,
 ): Promise<FlowResult> {
   const providers = await getAvailableProviders()
   if (providers.length === 0) {
@@ -143,7 +157,19 @@ async function configureAgentFlow(
           return { type: "cancel" }
         }
 
-        const modelResult = await selectModel({ models, agentName, currentModelId })
+        const modelResult = await selectModel({
+          models,
+          agentName,
+          currentModelId,
+          onRefresh: async () => {
+            if (!selectedProvider) return []
+            await getAvailableModelIds({ refresh: true })
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels(opencodeConfig)
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
+          },
+        })
         if (isCancel(modelResult)) return { type: "cancel" }
 
         if (modelResult === "BACK_ACTION") {
@@ -181,6 +207,17 @@ async function configureAgentFlow(
   }
 }
 
+/**
+ * Interactively configure agents' provider, model, and variant selections and persist the changes to the configuration.
+ *
+ * Loads the existing config and available models, prompts the user to select one or more agents to configure, runs the agent configuration flow for each selected agent, updates the in-memory config with chosen provider/model/variant values, and saves the resulting config (or displays a dry-run summary when `dryRun` is true).
+ *
+ * @param options - Command options.
+ * @param options.config - Path to the configuration file or config identifier used to locate and read the config.
+ * @param options.opencodeConfig - Runtime settings required by the agent configuration flow.
+ * @param options.refresh - If true, refresh available model data when prompted.
+ * @param options.dryRun - If true, do not write changes to disk; show what would be applied instead.
+ */
 export async function configureAgentsCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ) {
@@ -216,7 +253,13 @@ export async function configureAgentsCommand(
     const currentModel = config.agents?.[agent]?.model
     const currentVariant = config.agents?.[agent]?.variant
 
-    const result = await configureAgentFlow(mergedCache, agent, currentModel, currentVariant)
+    const result = await configureAgentFlow(
+      mergedCache,
+      agent,
+      currentModel,
+      currentVariant,
+      options.opencodeConfig,
+    )
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
@@ -251,6 +294,19 @@ export async function configureAgentsCommand(
   await saveConfigureResult(configPath, config, newConfig, initialMtime, options.dryRun)
 }
 
+/**
+ * Interactive flow to configure model provider, model ID, and variant for each category in the config.
+ *
+ * Loads the current configuration and available models, prompts the user for each category (with support for skipping,
+ * backtracking, and cancellation), applies selected provider/model/variant values to a cloned configuration, and saves
+ * the results (or prints a dry-run preview when `dryRun` is enabled).
+ *
+ * @param options - Command options containing:
+ *   - `config`: path or override used to locate the configuration
+ *   - `opencodeConfig`: opencode-related settings passed to model selection flows
+ *   - `refresh`: whether to refresh available model lists during selection
+ *   - `dryRun`: if `true`, do not persist changes; show the planned changes instead
+ */
 export async function configureCategoriesCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ) {
@@ -301,7 +357,13 @@ export async function configureCategoriesCommand(
     const currentModel = config.categories?.[category]?.model
     const currentVariant = config.categories?.[category]?.variant
 
-    const result = await configureAgentFlow(mergedCache, "librarian", currentModel, currentVariant)
+    const result = await configureAgentFlow(
+      mergedCache,
+      "librarian",
+      currentModel,
+      currentVariant,
+      options.opencodeConfig,
+    )
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
