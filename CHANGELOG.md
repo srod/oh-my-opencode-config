@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4
+
+### Patch Changes
+
+- [#30](https://github.com/srod/oh-my-opencode-config/pull/30) [`2a9ab78`](https://github.com/srod/oh-my-opencode-config/commit/2a9ab78a118a391c612683f20c4966db99935250) Thanks [@srod](https://github.com/srod)! - Sync upstream defaults to oh-my-opencode v3.9.0: Gemini 3 → 3.1 Pro for visual-engineering and artistry categories, Kimi K2.5 for writing category.
+
 ## 0.4.3
 
 ### Patch Changes
