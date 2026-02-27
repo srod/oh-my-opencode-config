@@ -10,8 +10,15 @@ export interface SelectModelOptions {
   models: Model[]
   agentName: AgentName
   currentModelId?: string
+  onRefresh?: () => Promise<Model[]>
 }
 
+/**
+ * Builds a comma-separated list of capability names supported by the model.
+ *
+ * @param model - The model to inspect for supported capabilities
+ * @returns A comma-separated string of capability names supported by `model`, or an empty string if none
+ */
 function getCapabilitiesDisplay(model: Model): string {
   const caps: string[] = []
   for (const cap of Object.values(Capability)) {
@@ -22,6 +29,16 @@ function getCapabilitiesDisplay(model: Model): string {
   return caps.join(", ")
 }
 
+/**
+ * Present a searchable list of models for the given agent and return the user's selection.
+ *
+ * @param options - Configuration for model selection:
+ *   - models: Array of available models to display
+ *   - agentName: Agent name used to validate model capabilities
+ *   - currentModelId: Optional model id to mark as the current selection
+ *   - onRefresh: Optional callback to refresh the model list
+ * @returns The selected `Model`, a `symbol` for special UI actions, or the `ActionValue` `'BACK_ACTION'` when the back option is chosen
+ */
 export async function selectModel(
   options: SelectModelOptions,
 ): Promise<Model | symbol | ActionValue> {
@@ -61,6 +78,8 @@ export async function selectModel(
     message: (searchTerm) =>
       `Select model for ${chalk.bold(options.agentName)} ${searchTerm ? `(filter: "${searchTerm}")` : ""}`,
     searchPlaceholder: "e.g. gpt-4",
+    onRefresh: options.onRefresh,
+    refreshLabel: "Refresh models",
     backLabel: "Back to providers",
     canGoBack: true,
   })
