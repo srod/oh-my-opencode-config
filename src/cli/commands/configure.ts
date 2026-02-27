@@ -114,6 +114,7 @@ type FlowResult =
  * @param currentVariant - Optional variant to preselect in the variant chooser
  * @param opencodeConfig - Optional path to the opencode configuration (used when refreshing custom models)
  * @returns On success, an object with `type: "success"` containing `provider`, `model` (with `id`), and `variant`; `type: "cancel"` if the user cancelled; or `type: "back"` if the user requested to go back to the caller.
+ */
 async function configureAgentFlow(
   modelsCache: Awaited<ReturnType<typeof loadModelsCache>>,
   agentName: AgentName,
