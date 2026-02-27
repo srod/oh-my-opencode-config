@@ -106,6 +106,7 @@ async function configureAgentFlow(
   agentName: AgentName,
   currentModelId?: string,
   currentVariant?: string,
+  opencodeConfig?: string,
 ): Promise<FlowResult> {
   const providers = await getAvailableProviders()
   if (providers.length === 0) {
@@ -151,7 +152,7 @@ async function configureAgentFlow(
             if (!selectedProvider) return []
             await getAvailableModelIds({ refresh: true })
             const refreshedCache = await loadModelsCache()
-            const refreshedCustom = await loadCustomModels()
+            const refreshedCustom = await loadCustomModels(opencodeConfig)
             const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
             return getAvailableModels(refreshedMerged, selectedProvider)
           },
@@ -228,7 +229,7 @@ export async function configureAgentsCommand(
     const currentModel = config.agents?.[agent]?.model
     const currentVariant = config.agents?.[agent]?.variant
 
-    const result = await configureAgentFlow(mergedCache, agent, currentModel, currentVariant)
+    const result = await configureAgentFlow(mergedCache, agent, currentModel, currentVariant, options.opencodeConfig)
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
@@ -313,7 +314,7 @@ export async function configureCategoriesCommand(
     const currentModel = config.categories?.[category]?.model
     const currentVariant = config.categories?.[category]?.variant
 
-    const result = await configureAgentFlow(mergedCache, "librarian", currentModel, currentVariant)
+    const result = await configureAgentFlow(mergedCache, "librarian", currentModel, currentVariant, options.opencodeConfig)
 
     if (result.type === "cancel") {
       cancel("Operation cancelled.")
