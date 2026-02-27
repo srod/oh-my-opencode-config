@@ -118,8 +118,12 @@ export async function searchableSelect<T>(
       if (onRefresh) {
         const s = spinner()
         s.start("Refreshing models...")
-        allItems = await onRefresh()
-        s.stop(`Refreshed ${allItems.length} model(s).`)
+        try {
+          allItems = await onRefresh()
+          s.stop(`Refreshed ${allItems.length} model(s).`)
+        } catch {
+          s.stop("Refresh failed. Using previous model list.")
+        }
         const lowered = searchTerm.toLowerCase()
         filteredItems = searchTerm
           ? allItems.filter((item) => getSearchText(item).toLowerCase().includes(lowered))

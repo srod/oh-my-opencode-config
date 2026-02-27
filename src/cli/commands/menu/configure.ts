@@ -110,7 +110,10 @@ export async function menuConfigureAgents(
           onRefresh: async () => {
             if (!selectedProvider) return []
             await getAvailableModelIds({ refresh: true })
-            return getAvailableModels(mergedCache, selectedProvider)
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels(options.opencodeConfig)
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
           },
         })
         if (isCancel(modelResult)) {
@@ -290,7 +293,10 @@ export async function menuConfigureCategories(
           onRefresh: async () => {
             if (!selectedProvider) return []
             await getAvailableModelIds({ refresh: true })
-            return getAvailableModels(mergedCache, selectedProvider)
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels(options.opencodeConfig)
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
           },
         })
         if (isCancel(modelResult)) {

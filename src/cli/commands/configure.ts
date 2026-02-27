@@ -150,7 +150,10 @@ async function configureAgentFlow(
           onRefresh: async () => {
             if (!selectedProvider) return []
             await getAvailableModelIds({ refresh: true })
-            return getAvailableModels(modelsCache, selectedProvider)
+            const refreshedCache = await loadModelsCache()
+            const refreshedCustom = await loadCustomModels()
+            const refreshedMerged = mergeModelsCache(refreshedCache, refreshedCustom)
+            return getAvailableModels(refreshedMerged, selectedProvider)
           },
         })
         if (isCancel(modelResult)) return { type: "cancel" }
