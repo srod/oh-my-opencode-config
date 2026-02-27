@@ -32,6 +32,14 @@ const REFRESH_ACTION = Symbol("refresh")
 const CLEAR_ACTION = Symbol("clear")
 export const SELECTION_NOT_FOUND = Symbol("selection-not-found")
 
+/**
+ * Present an interactive searchable selection UI and return the chosen result.
+ *
+ * Supports changing the search query, optionally refreshing the item list via `onRefresh`, clearing the query, and an optional back action.
+ *
+ * @param options - Configuration for the searchable selection, including items, rendering/matching callbacks, labels, and optional refresh/back behavior
+ * @returns The selected item (`T`), a `symbol` action (e.g., a sentinel symbol from the options), or a `SearchableAction` (`"BACK_ACTION"`) indicating the user chose to go back
+ */
 export async function searchableSelect<T>(
   options: SearchableSelectOptions<T>,
 ): Promise<T | symbol | SearchableAction> {
