@@ -13,6 +13,11 @@ bun run check      # biome lint+format
 bun run typecheck  # tsc --noEmit
 ```
 
+## Task Completion Requirements
+
+- Both `bun run check:fix` and `bun run typecheck` must pass before considering tasks completed.
+- NEVER run `bun test`. Always use `bun run test` (runs Vitest).
+
 ## Structure
 
 ```
