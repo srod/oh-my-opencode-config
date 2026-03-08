@@ -130,7 +130,7 @@ export async function showHelpCommand(): Promise<void> {
   printLine("  configure         Configure models")
   printLine("    agents          Assign models to agents")
   printLine("    categories      Assign models to categories")
-  printLine("    quick-setup     Apply preset configurations (Standard, Economy)")
+  printLine("    quick-setup     Apply preset configurations (Standard, Economy, Anthropic)")
   printLine("  profile           Manage configuration profiles")
   printLine("    save [name]     Save current config as named profile")
   printLine("    template        Create or update profile template")
