@@ -30,8 +30,8 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
 `
 
     const parsed = parseUpstreamAgentRequirements(source)
-    expect(parsed.sisyphus).toEqual({ model: "claude-opus-4-6", variant: "max" })
-    expect(parsed["multimodal-looker"]).toEqual({ model: "gemini-3-flash" })
+    expect(parsed.sisyphus).toEqual({ model: "anthropic/claude-opus-4-6", variant: "max" })
+    expect(parsed["multimodal-looker"]).toEqual({ model: "google/gemini-3-flash" })
   })
 
   it("supports single-quoted object keys", () => {
@@ -48,7 +48,7 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
 `
 
     const parsed = parseUpstreamAgentRequirements(source)
-    expect(parsed["multimodal-looker"]).toEqual({ model: "gemini-3-flash" })
+    expect(parsed["multimodal-looker"]).toEqual({ model: "google/gemini-3-flash" })
   })
 
   it("throws contextual error when braces cannot be matched", () => {
@@ -90,13 +90,13 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
 `
 
     const parsed = parseUpstreamCategoryRequirements(source)
-    expect(parsed.writing).toEqual({ model: "gemini-3-flash" })
-    expect(parsed["unspecified-low"]).toEqual({ model: "claude-sonnet-4-6" })
+    expect(parsed.writing).toEqual({ model: "google/gemini-3-flash" })
+    expect(parsed["unspecified-low"]).toEqual({ model: "anthropic/claude-sonnet-4-6" })
   })
 })
 
 describe("buildExpectedAgentDefaults", () => {
-  it("preserves provider prefix while syncing model and variant", () => {
+  it("uses the upstream provider when syncing model and variant", () => {
     const current = {
       sisyphus: { model: "anthropic/claude-opus-4-5", variant: "max" },
       momus: { model: "openai/gpt-5.2" },
@@ -106,16 +106,35 @@ describe("buildExpectedAgentDefaults", () => {
 
     const upstream = {
       sisyphus: { model: "anthropic/claude-opus-4-6", variant: "max" },
-      momus: { model: "gpt-5.2", variant: "medium" },
-      explore: { model: "grok-code-fast-1" },
+      momus: { model: "openai/gpt-5.2", variant: "medium" },
+      explore: { model: "github-copilot/grok-code-fast-1" },
       local: { model: "openai/gpt-5-mini" },
     }
 
     const expected = buildExpectedAgentDefaults(current, upstream)
     expect(expected.sisyphus).toEqual({ model: "anthropic/claude-opus-4-6", variant: "max" })
     expect(expected.momus).toEqual({ model: "openai/gpt-5.2", variant: "medium" })
-    expect(expected.explore).toEqual({ model: "x-ai/grok-code-fast-1" })
+    expect(expected.explore).toEqual({ model: "github-copilot/grok-code-fast-1" })
     expect(expected.local).toEqual({ model: "openai/gpt-5-mini" })
+  })
+
+  it("replaces the current provider when upstream moves to a different one", () => {
+    const current = {
+      atlas: { model: "kimi-for-coding/kimi-k2.5-free" },
+      "multimodal-looker": { model: "google/kimi-k2.5-free" },
+    }
+
+    const upstream = {
+      atlas: { model: "anthropic/claude-sonnet-4-6" },
+      "multimodal-looker": { model: "openai/gpt-5.4", variant: "medium" },
+    }
+
+    const expected = buildExpectedAgentDefaults(current, upstream)
+    expect(expected.atlas).toEqual({ model: "anthropic/claude-sonnet-4-6" })
+    expect(expected["multimodal-looker"]).toEqual({
+      model: "openai/gpt-5.4",
+      variant: "medium",
+    })
   })
 })
 
@@ -139,19 +158,34 @@ describe("diffAgentDefaults", () => {
 })
 
 describe("buildExpectedCategoryDefaults", () => {
-  it("preserves provider prefix while syncing category model and variant", () => {
+  it("uses the upstream provider while syncing category model and variant", () => {
     const current = {
       writing: { model: "kimi-for-coding/k2p5" },
       "unspecified-low": { model: "anthropic/claude-sonnet-4-5" },
     }
     const upstream = {
-      writing: { model: "gemini-3-flash" },
-      "unspecified-low": { model: "claude-sonnet-4-6" },
+      writing: { model: "google/gemini-3-flash" },
+      "unspecified-low": { model: "anthropic/claude-sonnet-4-6" },
     }
 
     const expected = buildExpectedCategoryDefaults(current, upstream)
-    expect(expected.writing).toEqual({ model: "kimi-for-coding/gemini-3-flash" })
+    expect(expected.writing).toEqual({ model: "google/gemini-3-flash" })
     expect(expected["unspecified-low"]).toEqual({ model: "anthropic/claude-sonnet-4-6" })
+  })
+
+  it("updates categories when upstream switches providers", () => {
+    const current = {
+      "unspecified-high": { model: "anthropic/claude-opus-4-6", variant: "max" },
+    }
+    const upstream = {
+      "unspecified-high": { model: "openai/gpt-5.4", variant: "high" },
+    }
+
+    const expected = buildExpectedCategoryDefaults(current, upstream)
+    expect(expected["unspecified-high"]).toEqual({
+      model: "openai/gpt-5.4",
+      variant: "high",
+    })
   })
 })
 

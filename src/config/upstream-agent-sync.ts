@@ -214,7 +214,7 @@ function extractTopLevelProperties(source: string): Array<{ key: string; value: 
 }
 
 /**
- * Extracts the first fallback's model and optional variant from a `fallbackChain` entry string.
+ * Extracts the first fallback's provider, model and optional variant from a `fallbackChain` entry string.
  *
  * @param entry - Source string containing a `fallbackChain` array entry to parse
  * @returns `SyncedAgentConfig` for the first object in `fallbackChain`, or `undefined` if no valid first fallback is found
@@ -239,10 +239,14 @@ function parseFirstFallback(entry: string): SyncedAgentConfig | undefined {
   const firstEntry = entry.slice(firstEntryStart, firstEntryEnd + 1)
 
   const modelMatch = /model:\s*"([^"]+)"/.exec(firstEntry)
-  const model = modelMatch?.[1]
-  if (model === undefined) {
+  const modelName = modelMatch?.[1]
+  if (modelName === undefined) {
     return undefined
   }
+
+  const providersMatch = /providers:\s*\[\s*"([^"]+)"/.exec(firstEntry)
+  const provider = providersMatch?.[1]
+  const model = provider === undefined ? modelName : `${provider}/${modelName}`
 
   const variantMatch = /variant:\s*"([^"]+)"/.exec(firstEntry)
   const variant = variantMatch?.[1]
@@ -330,9 +334,8 @@ export function parseUpstreamCategoryRequirements(source: string): CategoryDefau
 /**
  * Builds expected defaults by aligning each current key with upstream model requirements.
  *
- * For each key in `current`, if `upstream` provides a config the result uses the upstream model and variant;
- * if the current model includes a provider prefix (text before `/`), that prefix is preserved and applied
- * to the upstream model name. Keys absent from `upstream` are copied from `current`.
+ * For each key in `current`, if `upstream` provides a config the result uses the upstream model and variant.
+ * Keys absent from `upstream` are copied from `current`.
  *
  * @param current - Mapping of keys to their existing synced configurations
  * @param upstream - Mapping of keys to upstream synced configurations to adopt
@@ -348,18 +351,9 @@ function buildExpectedDefaults(current: AgentDefaults, upstream: AgentDefaults):
       continue
     }
 
-    const slashIndex = config.model.indexOf("/")
-    const provider = slashIndex >= 0 ? config.model.slice(0, slashIndex) : ""
-    const upstreamSlashIndex = upstreamConfig.model.indexOf("/")
-    const upstreamModelName =
-      upstreamSlashIndex >= 0
-        ? upstreamConfig.model.slice(upstreamSlashIndex + 1)
-        : upstreamConfig.model
-    const model = provider.length > 0 ? `${provider}/${upstreamModelName}` : upstreamConfig.model
-
     expected[agent] = upstreamConfig.variant
-      ? { model, variant: upstreamConfig.variant }
-      : { model }
+      ? { model: upstreamConfig.model, variant: upstreamConfig.variant }
+      : { model: upstreamConfig.model }
   }
 
   return expected
