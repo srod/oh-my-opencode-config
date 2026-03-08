@@ -388,7 +388,6 @@ export async function menuConfigureCategories(
 export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">): Promise<void> {
   const configPath = resolveConfigPath(options.config)
   const initialMtime = await getFileMtime(configPath)
-  await promptAndCreateBackup(configPath)
   const currentConfig = await loadConfig(configPath)
 
   const preset = await select({
@@ -396,7 +395,7 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
     options: QUICK_SETUP_PRESET_OPTIONS,
   })
 
-  if (typeof preset !== "string") {
+  if (isCancel(preset)) {
     printLine(chalk.yellow("Operation cancelled."))
     return
   }
@@ -426,7 +425,7 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
     return
   }
 
-  await createBackup(configPath)
+  await promptAndCreateBackup(configPath)
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   printLine(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
 }

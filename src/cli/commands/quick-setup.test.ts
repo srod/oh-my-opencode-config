@@ -49,6 +49,17 @@ const defaultOptions = { config: "/fake/config.json" }
 describe("quickSetupCommand", () => {
   beforeEach(resetAllMocks)
 
+  test("does not prompt for backup when preset selection is cancelled", async () => {
+    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as string))
+
+    await quickSetupCommand(defaultOptions)
+
+    expect(mockPromptAndCreateBackup).not.toHaveBeenCalled()
+    expect(mockCreateBackup).not.toHaveBeenCalled()
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockOutro).toHaveBeenCalled()
+  })
+
   test("cancels when preset selection does not match a known preset", async () => {
     mockSelect.mockImplementation(() => Promise.resolve("bogus-preset"))
 
@@ -63,6 +74,18 @@ describe("quickSetupCommand", () => {
 
     await quickSetupCommand(defaultOptions)
 
+    expect(mockCreateBackup).not.toHaveBeenCalled()
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockCleanupOldBackups).not.toHaveBeenCalled()
+    expect(mockOutro).toHaveBeenCalled()
+  })
+
+  test("does not prompt for backup when the selected preset makes no changes", async () => {
+    mockGenerateDiff.mockImplementation(() => [])
+
+    await quickSetupCommand(defaultOptions)
+
+    expect(mockPromptAndCreateBackup).not.toHaveBeenCalled()
     expect(mockCreateBackup).not.toHaveBeenCalled()
     expect(mockSaveConfig).not.toHaveBeenCalled()
     expect(mockCleanupOldBackups).not.toHaveBeenCalled()
@@ -85,6 +108,17 @@ describe("quickSetupCommand", () => {
 describe("menuQuickSetup", () => {
   beforeEach(resetAllMocks)
 
+  test("does not prompt for backup when preset selection is cancelled", async () => {
+    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as string))
+
+    await menuQuickSetup(defaultOptions)
+
+    expect(mockPromptAndCreateBackup).not.toHaveBeenCalled()
+    expect(mockCreateBackup).not.toHaveBeenCalled()
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockPrintLine).toHaveBeenCalled()
+  })
+
   test("cancels when preset selection does not match a known preset", async () => {
     mockSelect.mockImplementation(() => Promise.resolve("bogus-preset"))
 
@@ -99,6 +133,17 @@ describe("menuQuickSetup", () => {
 
     await menuQuickSetup(defaultOptions)
 
+    expect(mockCreateBackup).not.toHaveBeenCalled()
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockPrintLine).toHaveBeenCalled()
+  })
+
+  test("does not prompt for backup when the selected preset makes no changes", async () => {
+    mockGenerateDiff.mockImplementation(() => [])
+
+    await menuQuickSetup(defaultOptions)
+
+    expect(mockPromptAndCreateBackup).not.toHaveBeenCalled()
     expect(mockCreateBackup).not.toHaveBeenCalled()
     expect(mockSaveConfig).not.toHaveBeenCalled()
     expect(mockPrintLine).toHaveBeenCalled()

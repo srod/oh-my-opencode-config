@@ -1,6 +1,6 @@
 import { confirm, intro, isCancel, outro, select } from "@clack/prompts"
 import chalk from "chalk"
-import { cleanupOldBackups, createBackup } from "#backup/manager.js"
+import { cleanupOldBackups } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
@@ -17,9 +17,6 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
 
   const configPath = resolveConfigPath(options.config)
   const initialMtime = await getFileMtime(configPath)
-
-  await promptAndCreateBackup(configPath)
-
   const currentConfig = await loadConfig(configPath)
 
   const preset = await select({
@@ -27,7 +24,7 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
     options: QUICK_SETUP_PRESET_OPTIONS,
   })
 
-  if (typeof preset !== "string") {
+  if (isCancel(preset)) {
     outro(chalk.yellow("Operation cancelled."))
     return
   }
@@ -58,7 +55,7 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
     return
   }
 
-  await createBackup(configPath)
+  await promptAndCreateBackup(configPath)
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   await cleanupOldBackups(configPath)
   outro(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
