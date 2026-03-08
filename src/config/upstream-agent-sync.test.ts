@@ -68,6 +68,23 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
     expect(parsed.sisyphus).toEqual({ model: "anthropic/claude-opus-4-6", variant: "max" })
   })
 
+  it("skips entries when model values are unquoted expressions", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  sisyphus: {
+    fallbackChain: [
+      { providers: ["anthropic"], model: claudeOpusModel, variant: "max" },
+    ],
+  },
+}
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+`
+
+    const parsed = parseUpstreamAgentRequirements(source)
+    expect(parsed.sisyphus).toBeUndefined()
+  })
+
   it("throws contextual error when braces cannot be matched", () => {
     const source = `
 export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {

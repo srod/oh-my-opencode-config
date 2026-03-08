@@ -392,6 +392,11 @@ function parseStringToken(source: string): string | undefined {
     i += 1
   }
 
+  const quoteChar = source.charAt(i)
+  if (quoteChar !== '"' && quoteChar !== "'") {
+    return undefined
+  }
+
   const parsed = parseObjectKey(source, i)
   return parsed?.key
 }
