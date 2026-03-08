@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- [#33](https://github.com/srod/oh-my-opencode-config/pull/33) [`4bc4ccf`](https://github.com/srod/oh-my-opencode-config/commit/4bc4ccfbd45e26a1af73dba0367831e29029c1b8) Thanks [@srod](https://github.com/srod)! - Update the synced default assignments to upstream `v3.11.1`, fix default syncing when upstream changes providers, and add an `Anthropic` quick-setup preset.
+
 ## 0.4.4
 
 ### Patch Changes
