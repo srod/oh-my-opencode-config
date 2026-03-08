@@ -13,7 +13,11 @@ type QuickSetupPresetOption = {
   hint: string
 }
 
-const QUICK_SETUP_PRESET_VALUES = ["standard", "economy", "anthropic"] as const satisfies readonly QuickSetupPreset[]
+const QUICK_SETUP_PRESET_VALUES = [
+  "standard",
+  "economy",
+  "anthropic",
+] as const satisfies readonly QuickSetupPreset[]
 
 export function isQuickSetupPreset(value: string): value is QuickSetupPreset {
   return QUICK_SETUP_PRESET_VALUES.some((preset) => preset === value)
