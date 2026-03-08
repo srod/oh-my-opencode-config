@@ -60,7 +60,7 @@ If you use `bunx`, run `bunx oh-my-opencode-config --help`.
 | `status` | Check config health |
 | `configure agents` | Assign models to agents |
 | `configure categories` | Assign models to categories |
-| `configure quick-setup` | Apply Standard or Economy presets |
+| `configure quick-setup` | Apply Standard, Economy, or Anthropic presets |
 | `reset` | Reset to default model assignments |
 | `diff` | Show changes from defaults |
 | `doctor` | Diagnose issues (`--fix` repairs cache) |

@@ -213,8 +213,132 @@ function extractTopLevelProperties(source: string): Array<{ key: string; value: 
   return properties
 }
 
+function findTopLevelValueEnd(source: string, startIndex: number): number {
+  let braceDepth = 0
+  let bracketDepth = 0
+  let parenDepth = 0
+  let inString = false
+  let quoteChar = ""
+  let escaped = false
+
+  for (let i = startIndex; i < source.length; i++) {
+    const char = source.charAt(i)
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (char === "\\") {
+        escaped = true
+        continue
+      }
+      if (char === quoteChar) {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === "`") {
+      inString = true
+      quoteChar = char
+      continue
+    }
+
+    if (char === "{") {
+      braceDepth += 1
+      continue
+    }
+
+    if (char === "}") {
+      if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+        return i
+      }
+      braceDepth -= 1
+      continue
+    }
+
+    if (char === "[") {
+      bracketDepth += 1
+      continue
+    }
+
+    if (char === "]") {
+      bracketDepth -= 1
+      continue
+    }
+
+    if (char === "(") {
+      parenDepth += 1
+      continue
+    }
+
+    if (char === ")") {
+      parenDepth -= 1
+      continue
+    }
+
+    if (char === "," && braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      return i
+    }
+  }
+
+  return source.length
+}
+
+function extractTopLevelPropertyValues(source: string): Array<{ key: string; value: string }> {
+  const properties: Array<{ key: string; value: string }> = []
+  let i = 0
+
+  while (i < source.length) {
+    while (i < source.length && /[\s,]/.test(source.charAt(i))) {
+      i += 1
+    }
+    if (i >= source.length) {
+      break
+    }
+
+    if (source.charAt(i) === "/" && source.charAt(i + 1) === "/") {
+      while (i < source.length && source.charAt(i) !== "\n") {
+        i += 1
+      }
+      continue
+    }
+
+    const parsedKey = parseObjectKey(source, i)
+    if (parsedKey === undefined) {
+      i += 1
+      continue
+    }
+
+    i = parsedKey.next
+    while (i < source.length && /\s/.test(source.charAt(i))) {
+      i += 1
+    }
+    if (source.charAt(i) !== ":") {
+      i += 1
+      continue
+    }
+
+    i += 1
+    while (i < source.length && /\s/.test(source.charAt(i))) {
+      i += 1
+    }
+
+    const valueStart = i
+    const valueEnd = findTopLevelValueEnd(source, valueStart)
+    properties.push({
+      key: parsedKey.key,
+      value: source.slice(valueStart, valueEnd).trim(),
+    })
+    i = valueEnd + 1
+  }
+
+  return properties
+}
+
 /**
- * Extracts the first fallback's model and optional variant from a `fallbackChain` entry string.
+ * Extracts the first fallback's provider, model and optional variant from a `fallbackChain` entry string.
  *
  * @param entry - Source string containing a `fallbackChain` array entry to parse
  * @returns `SyncedAgentConfig` for the first object in `fallbackChain`, or `undefined` if no valid first fallback is found
@@ -236,21 +360,74 @@ function parseFirstFallback(entry: string): SyncedAgentConfig | undefined {
   }
 
   const firstEntryEnd = findMatchingBrace(entry, firstEntryStart)
-  const firstEntry = entry.slice(firstEntryStart, firstEntryEnd + 1)
+  const firstEntry = entry.slice(firstEntryStart + 1, firstEntryEnd)
+  const properties = extractTopLevelPropertyValues(firstEntry)
 
-  const modelMatch = /model:\s*"([^"]+)"/.exec(firstEntry)
-  const model = modelMatch?.[1]
+  const modelName = parseStringPropertyValue(properties, "model")
+  if (modelName === undefined) {
+    return undefined
+  }
+
+  const provider = parseFirstArrayStringValue(properties, "providers")
+  const model = modelName.includes("/")
+    ? modelName
+    : provider === undefined
+      ? undefined
+      : `${provider}/${modelName}`
   if (model === undefined) {
     return undefined
   }
 
-  const variantMatch = /variant:\s*"([^"]+)"/.exec(firstEntry)
-  const variant = variantMatch?.[1]
+  const variant = parseStringPropertyValue(properties, "variant")
   if (variant === undefined) {
     return { model }
   }
 
   return { model, variant }
+}
+
+function parseStringToken(source: string): string | undefined {
+  let i = 0
+  while (i < source.length && /\s/.test(source.charAt(i))) {
+    i += 1
+  }
+
+  const quoteChar = source.charAt(i)
+  if (quoteChar !== '"' && quoteChar !== "'") {
+    return undefined
+  }
+
+  const parsed = parseObjectKey(source, i)
+  return parsed?.key
+}
+
+function parseStringPropertyValue(
+  properties: Array<{ key: string; value: string }>,
+  key: string,
+): string | undefined {
+  const property = properties.find((candidate) => candidate.key === key)
+  if (property === undefined) {
+    return undefined
+  }
+
+  return parseStringToken(property.value)
+}
+
+function parseFirstArrayStringValue(
+  properties: Array<{ key: string; value: string }>,
+  key: string,
+): string | undefined {
+  const property = properties.find((candidate) => candidate.key === key)
+  if (property === undefined) {
+    return undefined
+  }
+
+  const arrayStart = property.value.indexOf("[")
+  if (arrayStart < 0) {
+    return undefined
+  }
+
+  return parseStringToken(property.value.slice(arrayStart + 1))
 }
 
 /**
@@ -330,9 +507,8 @@ export function parseUpstreamCategoryRequirements(source: string): CategoryDefau
 /**
  * Builds expected defaults by aligning each current key with upstream model requirements.
  *
- * For each key in `current`, if `upstream` provides a config the result uses the upstream model and variant;
- * if the current model includes a provider prefix (text before `/`), that prefix is preserved and applied
- * to the upstream model name. Keys absent from `upstream` are copied from `current`.
+ * For each key in `current`, if `upstream` provides a config the result uses the upstream model and variant.
+ * Keys absent from `upstream` are copied from `current`.
  *
  * @param current - Mapping of keys to their existing synced configurations
  * @param upstream - Mapping of keys to upstream synced configurations to adopt
@@ -348,18 +524,9 @@ function buildExpectedDefaults(current: AgentDefaults, upstream: AgentDefaults):
       continue
     }
 
-    const slashIndex = config.model.indexOf("/")
-    const provider = slashIndex >= 0 ? config.model.slice(0, slashIndex) : ""
-    const upstreamSlashIndex = upstreamConfig.model.indexOf("/")
-    const upstreamModelName =
-      upstreamSlashIndex >= 0
-        ? upstreamConfig.model.slice(upstreamSlashIndex + 1)
-        : upstreamConfig.model
-    const model = provider.length > 0 ? `${provider}/${upstreamModelName}` : upstreamConfig.model
-
     expected[agent] = upstreamConfig.variant
-      ? { model, variant: upstreamConfig.variant }
-      : { model }
+      ? { model: upstreamConfig.model, variant: upstreamConfig.variant }
+      : { model: upstreamConfig.model }
   }
 
   return expected

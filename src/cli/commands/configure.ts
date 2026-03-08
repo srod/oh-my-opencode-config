@@ -39,7 +39,7 @@ interface ConfigureContext {
 async function loadConfigureContext(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh">,
   title: string,
-): Promise<ConfigureContext> {
+): Promise<ConfigureContext | undefined> {
   await validateCacheAge(MODELS_CACHE_PATH)
   const configPath = resolveConfigPath(options.config)
   const initialMtime = await getFileMtime(configPath)
@@ -49,7 +49,11 @@ async function loadConfigureContext(
   const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
 
   intro(chalk.bold(title))
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    cancel("Operation cancelled.")
+    return undefined
+  }
 
   const s = spinner()
   s.start("Loading available models")
@@ -222,10 +226,11 @@ async function configureAgentFlow(
 export async function configureAgentsCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ) {
-  const { configPath, initialMtime, config, mergedCache } = await loadConfigureContext(
-    options,
-    "Configure Agents",
-  )
+  const context = await loadConfigureContext(options, "Configure Agents")
+  if (!context) {
+    return
+  }
+  const { configPath, initialMtime, config, mergedCache } = context
 
   const newConfig: Config = JSON.parse(JSON.stringify(config))
   if (!newConfig.agents) newConfig.agents = {}
@@ -311,10 +316,11 @@ export async function configureAgentsCommand(
 export async function configureCategoriesCommand(
   options: Pick<BaseCommandOptions, "config" | "opencodeConfig" | "refresh" | "dryRun">,
 ) {
-  const { configPath, initialMtime, config, mergedCache } = await loadConfigureContext(
-    options,
-    "Configure Categories",
-  )
+  const context = await loadConfigureContext(options, "Configure Categories")
+  if (!context) {
+    return
+  }
+  const { configPath, initialMtime, config, mergedCache } = context
 
   const configCategories = config.categories ?? {}
   const categories = Object.keys(

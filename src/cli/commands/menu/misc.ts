@@ -76,7 +76,11 @@ export async function menuReset(
 ): Promise<void> {
   const configPath = resolveConfigPath(options.config)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Reset cancelled."))
+    return
+  }
 
   const shouldReset = await confirm({
     message: chalk.red("Are you sure you want to reset the configuration to defaults?"),
@@ -130,7 +134,7 @@ export async function showHelpCommand(): Promise<void> {
   printLine("  configure         Configure models")
   printLine("    agents          Assign models to agents")
   printLine("    categories      Assign models to categories")
-  printLine("    quick-setup     Apply preset configurations (Standard, Economy)")
+  printLine("    quick-setup     Apply preset configurations (Standard, Economy, Anthropic)")
   printLine("  profile           Manage configuration profiles")
   printLine("    save [name]     Save current config as named profile")
   printLine("    template        Create or update profile template")

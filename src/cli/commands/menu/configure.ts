@@ -3,8 +3,8 @@ import chalk from "chalk"
 import { createBackup } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
 import type { BaseCommandOptions } from "#cli/types.js"
-import { DEFAULT_CONFIG } from "#config/defaults.js"
 import { loadConfig } from "#config/loader.js"
+import { isQuickSetupPreset, PRESET_CONFIGS, QUICK_SETUP_PRESET_OPTIONS } from "#config/presets.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { saveConfig } from "#config/writer.js"
 import { formatDiff } from "#diff/formatter.js"
@@ -46,7 +46,11 @@ export async function menuConfigureAgents(
   const customModelsCache = await loadCustomModels(options.opencodeConfig)
   const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
 
   const s = spinner()
   s.start("Loading available models")
@@ -224,7 +228,11 @@ export async function menuConfigureCategories(
   const customModelsCache = await loadCustomModels(options.opencodeConfig)
   const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
 
   const s = spinner()
   s.start("Loading available models")
@@ -387,31 +395,25 @@ export async function menuConfigureCategories(
 
 export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">): Promise<void> {
   const configPath = resolveConfigPath(options.config)
-  await promptAndCreateBackup(configPath)
+  const initialMtime = await getFileMtime(configPath)
   const currentConfig = await loadConfig(configPath)
 
   const preset = await select({
     message: "Select a configuration profile:",
-    options: [
-      {
-        value: "standard",
-        label: "Standard (Recommended)",
-        hint: "Default high-performance models (GPT-5.2, Claude Opus)",
-      },
-      {
-        value: "economy",
-        label: "Economy",
-        hint: "Cost-effective models (Haiku, Flash, GPT-4o Mini)",
-      },
-    ],
+    options: QUICK_SETUP_PRESET_OPTIONS,
   })
 
-  if (typeof preset !== "string") {
+  if (isCancel(preset)) {
     printLine(chalk.yellow("Operation cancelled."))
     return
   }
 
-  const newConfig = preset === "economy" ? getEconomyConfig() : DEFAULT_CONFIG
+  if (!isQuickSetupPreset(preset)) {
+    printLine(chalk.red(`Unknown preset selected: ${preset}`))
+    return
+  }
+
+  const newConfig = PRESET_CONFIGS[preset]
   const diffEntries = generateDiff(currentConfig, newConfig)
 
   if (diffEntries.length === 0) {
@@ -426,39 +428,18 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
     message: "Apply these changes?",
   })
 
-  if (!shouldContinue) {
+  if (isCancel(shouldContinue) || !shouldContinue) {
     printLine(chalk.yellow("Operation cancelled."))
     return
   }
 
-  await createBackup(configPath)
-  await saveConfig({ filePath: configPath, config: newConfig })
-  printLine(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
-}
-
-function getEconomyConfig() {
-  return {
-    agents: {
-      sisyphus: { model: "anthropic/claude-haiku-4-5" },
-      hephaestus: { model: "anthropic/claude-haiku-4-5" },
-      oracle: { model: "openai/gpt-4o" },
-      librarian: { model: "openai/gpt-4o-mini" },
-      explore: { model: "anthropic/claude-haiku-4-5" },
-      "multimodal-looker": { model: "google/gemini-3-flash" },
-      prometheus: { model: "anthropic/claude-haiku-4-5" },
-      metis: { model: "anthropic/claude-haiku-4-5" },
-      momus: { model: "openai/gpt-4o-mini" },
-      atlas: { model: "google/gemini-3-flash" },
-    },
-    categories: {
-      "visual-engineering": { model: "google/gemini-3-flash" },
-      ultrabrain: { model: "openai/gpt-4o" },
-      deep: { model: "openai/gpt-4o" },
-      artistry: { model: "google/gemini-3-flash" },
-      quick: { model: "anthropic/claude-haiku-4-5" },
-      "unspecified-low": { model: "anthropic/claude-haiku-4-5" },
-      "unspecified-high": { model: "anthropic/claude-sonnet-4-5" },
-      writing: { model: "google/gemini-3-flash" },
-    },
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
   }
+
+  await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
+  const backupNote = backupResult === "created" ? " Backup created." : ""
+  printLine(chalk.green(`✓ Configuration updated to ${preset} preset.${backupNote}`))
 }

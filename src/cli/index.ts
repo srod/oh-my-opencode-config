@@ -82,7 +82,7 @@ configure
 
 configure
   .command("quick-setup")
-  .description("Apply preset configurations (Standard, Economy)")
+  .description("Apply preset configurations (Standard, Economy, Anthropic)")
   .action(async () => {
     const options = program.opts()
     await quickSetupCommand(options)
