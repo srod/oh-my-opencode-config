@@ -47,7 +47,7 @@ function toPresetConfig(config: Config): PresetConfig {
     throw new Error("Preset configs require both agents and categories")
   }
 
-  return { agents, categories }
+  return { agents: { ...agents }, categories: { ...categories } }
 }
 
 const ECONOMY_CONFIG: PresetConfig = {

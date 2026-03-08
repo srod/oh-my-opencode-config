@@ -47,4 +47,13 @@ describe("PRESET_CONFIGS", () => {
       model: "anthropic/claude-haiku-4-5",
     })
   })
+
+  it("copies the default preset maps instead of reusing DEFAULT_CONFIG references", () => {
+    expect(PRESET_CONFIGS.standard.agents).not.toBe(DEFAULT_CONFIG.agents)
+    expect(PRESET_CONFIGS.standard.categories).not.toBe(DEFAULT_CONFIG.categories)
+    expect(PRESET_CONFIGS.standard).toEqual({
+      agents: DEFAULT_CONFIG.agents,
+      categories: DEFAULT_CONFIG.categories,
+    })
+  })
 })

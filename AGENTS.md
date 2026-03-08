@@ -8,7 +8,7 @@ Interactive CLI for managing model assignments in `oh-my-opencode.json`.
 bun install        # deps
 bun run build      # tsc → dist/
 bun run dev        # hot reload (--conditions=source)
-bun test           # bun:test (--conditions=source)
+bun run test       # bun:test (--conditions=source)
 bun run check      # biome lint+format
 bun run typecheck  # tsc --noEmit
 ```
@@ -16,7 +16,7 @@ bun run typecheck  # tsc --noEmit
 ## Task Completion Requirements
 
 - Both `bun run check:fix` and `bun run typecheck` must pass before considering tasks completed.
-- NEVER run `bun test`. Always use `bun run test` (runs Vitest).
+- Use `bun run test` for task completion rather than invoking `bun test` directly.
 
 ## Structure
 
