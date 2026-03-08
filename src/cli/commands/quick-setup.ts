@@ -1,20 +1,22 @@
-import { confirm, intro, outro, select } from "@clack/prompts"
+import { confirm, intro, isCancel, outro, select } from "@clack/prompts"
 import chalk from "chalk"
 import { cleanupOldBackups, createBackup } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
-import { PRESET_CONFIGS, QUICK_SETUP_PRESET_OPTIONS } from "#config/presets.js"
+import { PRESET_CONFIGS, QUICK_SETUP_PRESET_OPTIONS, isQuickSetupPreset } from "#config/presets.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { saveConfig } from "#config/writer.js"
 import { formatDiff } from "#diff/formatter.js"
 import { generateDiff } from "#diff/generator.js"
+import { getFileMtime } from "#utils/fs.js"
 import { printLine } from "#utils/output.js"
 
 export async function quickSetupCommand(options: Pick<BaseCommandOptions, "config">) {
   intro(chalk.bold("Quick Setup Presets"))
 
   const configPath = resolveConfigPath(options.config)
+  const initialMtime = await getFileMtime(configPath)
 
   await promptAndCreateBackup(configPath)
 
@@ -27,6 +29,11 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
 
   if (typeof preset !== "string") {
     outro(chalk.yellow("Operation cancelled."))
+    return
+  }
+
+  if (!isQuickSetupPreset(preset)) {
+    outro(chalk.red(`Unknown preset selected: ${preset}`))
     return
   }
 
@@ -46,13 +53,13 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
     message: "Apply these changes?",
   })
 
-  if (!shouldContinue) {
+  if (isCancel(shouldContinue) || !shouldContinue) {
     outro(chalk.yellow("Operation cancelled."))
     return
   }
 
   await createBackup(configPath)
-  await saveConfig({ filePath: configPath, config: newConfig })
+  await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   await cleanupOldBackups(configPath)
   outro(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
 }

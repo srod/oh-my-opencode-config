@@ -4,7 +4,7 @@ import { createBackup } from "#backup/manager.js"
 import { promptAndCreateBackup } from "#backup/prompt.js"
 import type { BaseCommandOptions } from "#cli/types.js"
 import { loadConfig } from "#config/loader.js"
-import { PRESET_CONFIGS, QUICK_SETUP_PRESET_OPTIONS } from "#config/presets.js"
+import { PRESET_CONFIGS, QUICK_SETUP_PRESET_OPTIONS, isQuickSetupPreset } from "#config/presets.js"
 import { resolveConfigPath } from "#config/resolve.js"
 import { saveConfig } from "#config/writer.js"
 import { formatDiff } from "#diff/formatter.js"
@@ -387,6 +387,7 @@ export async function menuConfigureCategories(
 
 export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">): Promise<void> {
   const configPath = resolveConfigPath(options.config)
+  const initialMtime = await getFileMtime(configPath)
   await promptAndCreateBackup(configPath)
   const currentConfig = await loadConfig(configPath)
 
@@ -397,6 +398,11 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
 
   if (typeof preset !== "string") {
     printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
+
+  if (!isQuickSetupPreset(preset)) {
+    printLine(chalk.red(`Unknown preset selected: ${preset}`))
     return
   }
 
@@ -415,12 +421,12 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
     message: "Apply these changes?",
   })
 
-  if (!shouldContinue) {
+  if (isCancel(shouldContinue) || !shouldContinue) {
     printLine(chalk.yellow("Operation cancelled."))
     return
   }
 
   await createBackup(configPath)
-  await saveConfig({ filePath: configPath, config: newConfig })
+  await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   printLine(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
 }

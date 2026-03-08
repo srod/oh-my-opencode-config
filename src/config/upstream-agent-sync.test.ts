@@ -51,6 +51,23 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
     expect(parsed["multimodal-looker"]).toEqual({ model: "google/gemini-3-flash" })
   })
 
+  it("keeps provider-prefixed model names without double-prefixing them", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  sisyphus: {
+    fallbackChain: [
+      { providers: ["anthropic"], model: "anthropic/claude-opus-4-6", variant: "max" },
+    ],
+  },
+}
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+`
+
+    const parsed = parseUpstreamAgentRequirements(source)
+    expect(parsed.sisyphus).toEqual({ model: "anthropic/claude-opus-4-6", variant: "max" })
+  })
+
   it("throws contextual error when braces cannot be matched", () => {
     const source = `
 export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
@@ -92,6 +109,23 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     const parsed = parseUpstreamCategoryRequirements(source)
     expect(parsed.writing).toEqual({ model: "google/gemini-3-flash" })
     expect(parsed["unspecified-low"]).toEqual({ model: "anthropic/claude-sonnet-4-6" })
+  })
+
+  it("skips entries whose first fallback does not include a provider or prefixed model id", () => {
+    const source = `
+export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {}
+
+export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
+  writing: {
+    fallbackChain: [
+      { model: "gemini-3-flash" },
+    ],
+  },
+}
+`
+
+    const parsed = parseUpstreamCategoryRequirements(source)
+    expect(parsed.writing).toBeUndefined()
   })
 })
 

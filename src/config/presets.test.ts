@@ -14,7 +14,10 @@ describe("QUICK_SETUP_PRESET_OPTIONS", () => {
 
 describe("PRESET_CONFIGS", () => {
   it("uses the current defaults as the standard preset", () => {
-    expect(PRESET_CONFIGS.standard).toBe(DEFAULT_CONFIG)
+    expect(PRESET_CONFIGS.standard).toEqual({
+      agents: DEFAULT_CONFIG.agents,
+      categories: DEFAULT_CONFIG.categories,
+    })
   })
 
   it("keeps every anthropic preset model on the anthropic provider", () => {

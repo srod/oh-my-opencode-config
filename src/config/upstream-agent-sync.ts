@@ -213,6 +213,130 @@ function extractTopLevelProperties(source: string): Array<{ key: string; value: 
   return properties
 }
 
+function findTopLevelValueEnd(source: string, startIndex: number): number {
+  let braceDepth = 0
+  let bracketDepth = 0
+  let parenDepth = 0
+  let inString = false
+  let quoteChar = ""
+  let escaped = false
+
+  for (let i = startIndex; i < source.length; i++) {
+    const char = source.charAt(i)
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (char === "\\") {
+        escaped = true
+        continue
+      }
+      if (char === quoteChar) {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === "`") {
+      inString = true
+      quoteChar = char
+      continue
+    }
+
+    if (char === "{") {
+      braceDepth += 1
+      continue
+    }
+
+    if (char === "}") {
+      if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+        return i
+      }
+      braceDepth -= 1
+      continue
+    }
+
+    if (char === "[") {
+      bracketDepth += 1
+      continue
+    }
+
+    if (char === "]") {
+      bracketDepth -= 1
+      continue
+    }
+
+    if (char === "(") {
+      parenDepth += 1
+      continue
+    }
+
+    if (char === ")") {
+      parenDepth -= 1
+      continue
+    }
+
+    if (char === "," && braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      return i
+    }
+  }
+
+  return source.length
+}
+
+function extractTopLevelPropertyValues(source: string): Array<{ key: string; value: string }> {
+  const properties: Array<{ key: string; value: string }> = []
+  let i = 0
+
+  while (i < source.length) {
+    while (i < source.length && /[\s,]/.test(source.charAt(i))) {
+      i += 1
+    }
+    if (i >= source.length) {
+      break
+    }
+
+    if (source.charAt(i) === "/" && source.charAt(i + 1) === "/") {
+      while (i < source.length && source.charAt(i) !== "\n") {
+        i += 1
+      }
+      continue
+    }
+
+    const parsedKey = parseObjectKey(source, i)
+    if (parsedKey === undefined) {
+      i += 1
+      continue
+    }
+
+    i = parsedKey.next
+    while (i < source.length && /\s/.test(source.charAt(i))) {
+      i += 1
+    }
+    if (source.charAt(i) !== ":") {
+      i += 1
+      continue
+    }
+
+    i += 1
+    while (i < source.length && /\s/.test(source.charAt(i))) {
+      i += 1
+    }
+
+    const valueStart = i
+    const valueEnd = findTopLevelValueEnd(source, valueStart)
+    properties.push({
+      key: parsedKey.key,
+      value: source.slice(valueStart, valueEnd).trim(),
+    })
+    i = valueEnd + 1
+  }
+
+  return properties
+}
+
 /**
  * Extracts the first fallback's provider, model and optional variant from a `fallbackChain` entry string.
  *
@@ -236,25 +360,69 @@ function parseFirstFallback(entry: string): SyncedAgentConfig | undefined {
   }
 
   const firstEntryEnd = findMatchingBrace(entry, firstEntryStart)
-  const firstEntry = entry.slice(firstEntryStart, firstEntryEnd + 1)
+  const firstEntry = entry.slice(firstEntryStart + 1, firstEntryEnd)
+  const properties = extractTopLevelPropertyValues(firstEntry)
 
-  const modelMatch = /model:\s*"([^"]+)"/.exec(firstEntry)
-  const modelName = modelMatch?.[1]
+  const modelName = parseStringPropertyValue(properties, "model")
   if (modelName === undefined) {
     return undefined
   }
 
-  const providersMatch = /providers:\s*\[\s*"([^"]+)"/.exec(firstEntry)
-  const provider = providersMatch?.[1]
-  const model = provider === undefined ? modelName : `${provider}/${modelName}`
+  const provider = parseFirstArrayStringValue(properties, "providers")
+  const model = modelName.includes("/")
+    ? modelName
+    : provider === undefined
+      ? undefined
+      : `${provider}/${modelName}`
+  if (model === undefined) {
+    return undefined
+  }
 
-  const variantMatch = /variant:\s*"([^"]+)"/.exec(firstEntry)
-  const variant = variantMatch?.[1]
+  const variant = parseStringPropertyValue(properties, "variant")
   if (variant === undefined) {
     return { model }
   }
 
   return { model, variant }
+}
+
+function parseStringToken(source: string): string | undefined {
+  let i = 0
+  while (i < source.length && /\s/.test(source.charAt(i))) {
+    i += 1
+  }
+
+  const parsed = parseObjectKey(source, i)
+  return parsed?.key
+}
+
+function parseStringPropertyValue(
+  properties: Array<{ key: string; value: string }>,
+  key: string,
+): string | undefined {
+  const property = properties.find((candidate) => candidate.key === key)
+  if (property === undefined) {
+    return undefined
+  }
+
+  return parseStringToken(property.value)
+}
+
+function parseFirstArrayStringValue(
+  properties: Array<{ key: string; value: string }>,
+  key: string,
+): string | undefined {
+  const property = properties.find((candidate) => candidate.key === key)
+  if (property === undefined) {
+    return undefined
+  }
+
+  const arrayStart = property.value.indexOf("[")
+  if (arrayStart < 0) {
+    return undefined
+  }
+
+  return parseStringToken(property.value.slice(arrayStart + 1))
 }
 
 /**

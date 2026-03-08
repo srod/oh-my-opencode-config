@@ -2,11 +2,21 @@ import { DEFAULT_CONFIG } from "#config/defaults.js"
 import type { Config } from "#types/config.js"
 
 export type QuickSetupPreset = "standard" | "economy" | "anthropic"
+export type PresetConfig = {
+  agents: NonNullable<Config["agents"]>
+  categories: NonNullable<Config["categories"]>
+}
 
 type QuickSetupPresetOption = {
   value: QuickSetupPreset
   label: string
   hint: string
+}
+
+const QUICK_SETUP_PRESET_VALUES = ["standard", "economy", "anthropic"] as const satisfies readonly QuickSetupPreset[]
+
+export function isQuickSetupPreset(value: string): value is QuickSetupPreset {
+  return QUICK_SETUP_PRESET_VALUES.some((preset) => preset === value)
 }
 
 export const QUICK_SETUP_PRESET_OPTIONS: QuickSetupPresetOption[] = [
@@ -27,7 +37,16 @@ export const QUICK_SETUP_PRESET_OPTIONS: QuickSetupPresetOption[] = [
   },
 ]
 
-const ECONOMY_CONFIG: Config = {
+function toPresetConfig(config: Config): PresetConfig {
+  const { agents, categories } = config
+  if (agents === undefined || categories === undefined) {
+    throw new Error("Preset configs require both agents and categories")
+  }
+
+  return { agents, categories }
+}
+
+const ECONOMY_CONFIG: PresetConfig = {
   agents: {
     sisyphus: { model: "anthropic/claude-haiku-4-5" },
     hephaestus: { model: "anthropic/claude-haiku-4-5" },
@@ -52,7 +71,7 @@ const ECONOMY_CONFIG: Config = {
   },
 }
 
-const ANTHROPIC_CONFIG: Config = {
+const ANTHROPIC_CONFIG: PresetConfig = {
   agents: {
     sisyphus: { model: "anthropic/claude-opus-4-6", variant: "max" },
     hephaestus: { model: "anthropic/claude-sonnet-4-6" },
@@ -77,8 +96,8 @@ const ANTHROPIC_CONFIG: Config = {
   },
 }
 
-export const PRESET_CONFIGS: Record<QuickSetupPreset, Config> = {
-  standard: DEFAULT_CONFIG,
+export const PRESET_CONFIGS: Record<QuickSetupPreset, PresetConfig> = {
+  standard: toPresetConfig(DEFAULT_CONFIG),
   economy: ECONOMY_CONFIG,
   anthropic: ANTHROPIC_CONFIG,
 }
