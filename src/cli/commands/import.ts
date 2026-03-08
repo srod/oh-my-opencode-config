@@ -96,8 +96,13 @@ export async function importCommand(
 
   const fileExists = await Bun.file(configPath).exists()
   if (fileExists) {
-    const backupCreated = await promptAndCreateBackup(configPath)
-    if (!backupCreated) {
+    const backupResult = await promptAndCreateBackup(configPath)
+    if (backupResult === "cancelled") {
+      cancel("Import cancelled.")
+      return
+    }
+
+    if (backupResult === "skipped") {
       const proceedWithoutBackup = await confirm({
         message: "Continue without backup?",
         initialValue: false,

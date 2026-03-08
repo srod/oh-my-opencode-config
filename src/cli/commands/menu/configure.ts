@@ -46,7 +46,11 @@ export async function menuConfigureAgents(
   const customModelsCache = await loadCustomModels(options.opencodeConfig)
   const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
 
   const s = spinner()
   s.start("Loading available models")
@@ -224,7 +228,11 @@ export async function menuConfigureCategories(
   const customModelsCache = await loadCustomModels(options.opencodeConfig)
   const mergedCache = mergeModelsCache(modelsCache, customModelsCache)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
 
   const s = spinner()
   s.start("Loading available models")
@@ -425,7 +433,13 @@ export async function menuQuickSetup(options: Pick<BaseCommandOptions, "config">
     return
   }
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Operation cancelled."))
+    return
+  }
+
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
-  printLine(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
+  const backupNote = backupResult === "created" ? " Backup created." : ""
+  printLine(chalk.green(`✓ Configuration updated to ${preset} preset.${backupNote}`))
 }

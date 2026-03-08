@@ -236,7 +236,7 @@ describe("importCommand", () => {
         exists: true,
         content: JSON.stringify(validConfig),
       })
-      mockPromptAndCreateBackup.mockResolvedValueOnce(true)
+      mockPromptAndCreateBackup.mockResolvedValueOnce("created")
       mockConfirm.mockResolvedValueOnce(true)
 
       await importCommand("./my-config.json", { config: "/tmp/test-config.json" })
@@ -250,7 +250,7 @@ describe("importCommand", () => {
         exists: true,
         content: JSON.stringify(validConfig),
       })
-      mockPromptAndCreateBackup.mockResolvedValueOnce(false)
+      mockPromptAndCreateBackup.mockResolvedValueOnce("skipped")
       mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
 
       await importCommand("./my-config.json", { config: "/tmp/test-config.json" })
@@ -264,12 +264,26 @@ describe("importCommand", () => {
         exists: true,
         content: JSON.stringify(validConfig),
       })
-      mockPromptAndCreateBackup.mockResolvedValueOnce(false)
+      mockPromptAndCreateBackup.mockResolvedValueOnce("skipped")
       mockConfirm.mockResolvedValueOnce(false)
 
       await importCommand("./my-config.json", { config: "/tmp/test-config.json" })
 
       expect(mockCancel).toHaveBeenCalled()
+      expect(mockSaveConfig).not.toHaveBeenCalled()
+    })
+
+    test("cancels immediately when backup prompt is cancelled", async () => {
+      restoreBunFile = setupBunFile({
+        exists: true,
+        content: JSON.stringify(validConfig),
+      })
+      mockPromptAndCreateBackup.mockResolvedValueOnce("cancelled")
+
+      await importCommand("./my-config.json", { config: "/tmp/test-config.json" })
+
+      expect(mockCancel).toHaveBeenCalled()
+      expect(mockConfirm).not.toHaveBeenCalled()
       expect(mockSaveConfig).not.toHaveBeenCalled()
     })
   })

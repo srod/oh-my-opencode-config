@@ -118,7 +118,9 @@ mock.module("#config/paths.js", () => ({
   OPENCODE_CONFIG_PATH: "/fake/opencode.json",
 }))
 
-export const mockPromptAndCreateBackup = mock(() => Promise.resolve(true))
+export const mockPromptAndCreateBackup = mock(
+  (): Promise<"created" | "skipped" | "cancelled"> => Promise.resolve("created"),
+)
 mock.module("#backup/prompt.js", () => ({ promptAndCreateBackup: mockPromptAndCreateBackup }))
 
 export const mockCreateBackup = mock(() => Promise.resolve())

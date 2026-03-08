@@ -55,8 +55,14 @@ export async function quickSetupCommand(options: Pick<BaseCommandOptions, "confi
     return
   }
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    outro(chalk.yellow("Operation cancelled."))
+    return
+  }
+
   await saveConfig({ filePath: configPath, config: newConfig, expectedMtime: initialMtime })
   await cleanupOldBackups(configPath)
-  outro(chalk.green(`✓ Configuration updated to ${preset} preset. Backup created.`))
+  const backupNote = backupResult === "created" ? " Backup created." : ""
+  outro(chalk.green(`✓ Configuration updated to ${preset} preset.${backupNote}`))
 }

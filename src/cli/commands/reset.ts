@@ -10,7 +10,11 @@ import { saveConfig } from "#config/writer.js"
 export async function resetCommand(options: Pick<BaseCommandOptions, "config" | "dryRun">) {
   const configPath = resolveConfigPath(options.config)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    cancel("Reset cancelled.")
+    return
+  }
 
   const shouldReset = await confirm({
     message: chalk.red("Are you sure you want to reset the configuration to defaults?"),

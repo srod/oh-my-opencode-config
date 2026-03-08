@@ -3,10 +3,12 @@ import chalk from "chalk"
 import { printLine } from "#utils/output.js"
 import { createBackup } from "./manager.js"
 
-export async function promptAndCreateBackup(configPath: string): Promise<boolean> {
+export type BackupPromptResult = "created" | "skipped" | "cancelled"
+
+export async function promptAndCreateBackup(configPath: string): Promise<BackupPromptResult> {
   const file = Bun.file(configPath)
   if (!(await file.exists())) {
-    return false
+    return "skipped"
   }
 
   const shouldBackup = await confirm({
@@ -14,11 +16,15 @@ export async function promptAndCreateBackup(configPath: string): Promise<boolean
     initialValue: true,
   })
 
-  if (isCancel(shouldBackup) || !shouldBackup) {
-    return false
+  if (isCancel(shouldBackup)) {
+    return "cancelled"
+  }
+
+  if (!shouldBackup) {
+    return "skipped"
   }
 
   const backupPath = await createBackup(configPath)
   printLine(chalk.dim(`Backup created: ${backupPath}`))
-  return true
+  return "created"
 }

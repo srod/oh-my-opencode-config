@@ -76,7 +76,11 @@ export async function menuReset(
 ): Promise<void> {
   const configPath = resolveConfigPath(options.config)
 
-  await promptAndCreateBackup(configPath)
+  const backupResult = await promptAndCreateBackup(configPath)
+  if (backupResult === "cancelled") {
+    printLine(chalk.yellow("Reset cancelled."))
+    return
+  }
 
   const shouldReset = await confirm({
     message: chalk.red("Are you sure you want to reset the configuration to defaults?"),

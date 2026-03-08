@@ -50,7 +50,7 @@ describe("quickSetupCommand", () => {
   beforeEach(resetAllMocks)
 
   test("does not prompt for backup when preset selection is cancelled", async () => {
-    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as string))
+    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL))
 
     await quickSetupCommand(defaultOptions)
 
@@ -70,7 +70,7 @@ describe("quickSetupCommand", () => {
   })
 
   test("does not save when confirm returns the cancel sentinel", async () => {
-    mockConfirm.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as boolean))
+    mockConfirm.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL))
 
     await quickSetupCommand(defaultOptions)
 
@@ -102,6 +102,30 @@ describe("quickSetupCommand", () => {
       config: expect.any(Object),
       expectedMtime: 1000,
     })
+  })
+
+  test("does not save when backup prompt is cancelled", async () => {
+    mockConfirm.mockImplementation(() => Promise.resolve(true))
+    mockPromptAndCreateBackup.mockImplementation(() => Promise.resolve("cancelled"))
+
+    await quickSetupCommand(defaultOptions)
+
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockCleanupOldBackups).not.toHaveBeenCalled()
+    expect(mockOutro).toHaveBeenCalledWith(expect.stringContaining("Operation cancelled."))
+  })
+
+  test("omits backup created message when backup is skipped", async () => {
+    mockConfirm.mockImplementation(() => Promise.resolve(true))
+    mockPromptAndCreateBackup.mockImplementation(() => Promise.resolve("skipped"))
+
+    await quickSetupCommand(defaultOptions)
+
+    expect(mockSaveConfig).toHaveBeenCalled()
+    expect(mockOutro).toHaveBeenCalledWith(
+      expect.stringContaining("Configuration updated to standard preset."),
+    )
+    expect(mockOutro).not.toHaveBeenCalledWith(expect.stringContaining("Backup created."))
   })
 })
 
@@ -109,7 +133,7 @@ describe("menuQuickSetup", () => {
   beforeEach(resetAllMocks)
 
   test("does not prompt for backup when preset selection is cancelled", async () => {
-    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as string))
+    mockSelect.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL))
 
     await menuQuickSetup(defaultOptions)
 
@@ -129,7 +153,7 @@ describe("menuQuickSetup", () => {
   })
 
   test("does not save when confirm returns the cancel sentinel", async () => {
-    mockConfirm.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL as unknown as boolean))
+    mockConfirm.mockImplementation(() => Promise.resolve(CANCEL_SYMBOL))
 
     await menuQuickSetup(defaultOptions)
 
@@ -159,5 +183,28 @@ describe("menuQuickSetup", () => {
       config: expect.any(Object),
       expectedMtime: 1000,
     })
+  })
+
+  test("does not save when backup prompt is cancelled", async () => {
+    mockConfirm.mockImplementation(() => Promise.resolve(true))
+    mockPromptAndCreateBackup.mockImplementation(() => Promise.resolve("cancelled"))
+
+    await menuQuickSetup(defaultOptions)
+
+    expect(mockSaveConfig).not.toHaveBeenCalled()
+    expect(mockPrintLine).toHaveBeenCalledWith(expect.stringContaining("Operation cancelled."))
+  })
+
+  test("omits backup created message when backup is skipped", async () => {
+    mockConfirm.mockImplementation(() => Promise.resolve(true))
+    mockPromptAndCreateBackup.mockImplementation(() => Promise.resolve("skipped"))
+
+    await menuQuickSetup(defaultOptions)
+
+    expect(mockSaveConfig).toHaveBeenCalled()
+    expect(mockPrintLine).toHaveBeenCalledWith(
+      expect.stringContaining("Configuration updated to standard preset."),
+    )
+    expect(mockPrintLine).not.toHaveBeenCalledWith(expect.stringContaining("Backup created."))
   })
 })
