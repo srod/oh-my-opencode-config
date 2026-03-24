@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { DEFAULT_CONFIG } from "./defaults.js"
 
 describe("DEFAULT_CONFIG upstream sync", () => {
-  it("matches oh-my-opencode v3.11.1 agent defaults", () => {
+  it("matches oh-my-opencode v3.12.3 agent defaults", () => {
     expect(DEFAULT_CONFIG.agents.sisyphus).toEqual({
       model: "anthropic/claude-opus-4-6",
       variant: "max",
@@ -31,7 +31,7 @@ describe("DEFAULT_CONFIG upstream sync", () => {
       model: "anthropic/claude-sonnet-4-6",
     })
     expect(DEFAULT_CONFIG.agents.librarian).toEqual({
-      model: "google/gemini-3-flash",
+      model: "opencode-go/minimax-m2.5",
     })
     expect(DEFAULT_CONFIG.agents["multimodal-looker"]).toEqual({
       model: "openai/gpt-5.4",
@@ -39,13 +39,13 @@ describe("DEFAULT_CONFIG upstream sync", () => {
     })
   })
 
-  it("matches oh-my-opencode v3.11.1 category defaults", () => {
+  it("matches oh-my-opencode v3.12.3 category defaults", () => {
     expect(DEFAULT_CONFIG.categories["visual-engineering"]).toEqual({
       model: "google/gemini-3.1-pro",
       variant: "high",
     })
     expect(DEFAULT_CONFIG.categories.ultrabrain).toEqual({
-      model: "openai/gpt-5.3-codex",
+      model: "openai/gpt-5.4",
       variant: "xhigh",
     })
     expect(DEFAULT_CONFIG.categories.deep).toEqual({
@@ -63,8 +63,8 @@ describe("DEFAULT_CONFIG upstream sync", () => {
       model: "anthropic/claude-sonnet-4-6",
     })
     expect(DEFAULT_CONFIG.categories["unspecified-high"]).toEqual({
-      model: "openai/gpt-5.4",
-      variant: "high",
+      model: "anthropic/claude-opus-4-6",
+      variant: "max",
     })
     expect(DEFAULT_CONFIG.categories.writing).toEqual({
       model: "google/gemini-3-flash",
