@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1
+
+### Patch Changes
+
+- [#45](https://github.com/srod/oh-my-opencode-config/pull/45) [`d7910e4`](https://github.com/srod/oh-my-opencode-config/commit/d7910e4b5734c284c29a5c1be161d2982472a7e9) Thanks [@srod](https://github.com/srod)! - Sync upstream default assignments to `oh-my-opencode` `v3.12.3` for `librarian`, `ultrabrain`, and `unspecified-high`.
+
 ## 0.5.0
 
 ### Minor Changes
