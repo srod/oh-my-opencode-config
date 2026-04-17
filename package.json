@@ -125,7 +125,7 @@
     "@changesets/cli": "^2.29.8",
     "@types/bun": "latest",
     "@types/node": "^25.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.0"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0",
